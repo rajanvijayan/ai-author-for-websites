@@ -104,16 +104,16 @@ class Updater {
 	 */
 	private function init_hooks(): void {
 		// Check for updates.
-		add_filter( 'pre_set_site_transient_update_plugins', [ $this, 'check_for_update' ] );
+		add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'check_for_update' ) );
 
 		// Plugin information popup.
-		add_filter( 'plugins_api', [ $this, 'plugin_info' ], 20, 3 );
+		add_filter( 'plugins_api', array( $this, 'plugin_info' ), 20, 3 );
 
 		// After update cleanup.
-		add_action( 'upgrader_process_complete', [ $this, 'after_update' ], 10, 2 );
+		add_action( 'upgrader_process_complete', array( $this, 'after_update' ), 10, 2 );
 
 		// Add update notification in plugin row.
-		add_action( 'in_plugin_update_message-' . $this->basename, [ $this, 'update_message' ], 10, 2 );
+		add_action( 'in_plugin_update_message-' . $this->basename, array( $this, 'update_message' ), 10, 2 );
 	}
 
 	/**
@@ -134,23 +134,23 @@ class Updater {
 			isset( $remote->version ) &&
 			version_compare( $this->version, $remote->version, '<' )
 		) {
-			$transient->response[ $this->basename ] = (object) [
+			$transient->response[ $this->basename ] = (object) array(
 				'slug'        => $this->slug,
 				'plugin'      => $this->basename,
 				'new_version' => $remote->version,
 				'url'         => $remote->homepage ?? "https://github.com/{$this->github_owner}/{$this->github_repo}",
 				'package'     => $remote->download_url ?? '',
-				'icons'       => [
+				'icons'       => array(
 					'default' => AIAUTHOR_PLUGIN_URL . 'assets/images/icon-128x128.png',
-				],
-				'banners'     => [
+				),
+				'banners'     => array(
 					'low'  => AIAUTHOR_PLUGIN_URL . 'assets/images/banner-772x250.png',
 					'high' => AIAUTHOR_PLUGIN_URL . 'assets/images/banner-1544x500.png',
-				],
+				),
 				'tested'      => $remote->tested ?? '',
 				'requires'    => $remote->requires ?? '5.8',
-				'requires_php'=> $remote->requires_php ?? '8.0',
-			];
+				'requires_php' => $remote->requires_php ?? '8.0',
+			);
 		}
 
 		return $transient;
@@ -179,7 +179,7 @@ class Updater {
 			return $result;
 		}
 
-		return (object) [
+		return (object) array(
 			'name'              => $remote->name ?? 'AI Author for Websites',
 			'slug'              => $this->slug,
 			'version'           => $remote->version ?? $this->version,
@@ -192,17 +192,17 @@ class Updater {
 			'last_updated'      => $remote->last_updated ?? '',
 			'homepage'          => "https://github.com/{$this->github_owner}/{$this->github_repo}",
 			'short_description' => $remote->description ?? 'AI-powered blog post generator for WordPress.',
-			'sections'          => [
+			'sections'          => array(
 				'description'  => $remote->sections->description ?? $this->get_default_description(),
 				'installation' => $this->get_installation_instructions(),
 				'changelog'    => $remote->sections->changelog ?? '',
-			],
+			),
 			'download_link'     => $remote->download_url ?? '',
-			'banners'           => [
+			'banners'           => array(
 				'low'  => AIAUTHOR_PLUGIN_URL . 'assets/images/banner-772x250.png',
 				'high' => AIAUTHOR_PLUGIN_URL . 'assets/images/banner-1544x500.png',
-			],
-		];
+			),
+		);
 	}
 
 	/**
@@ -238,13 +238,13 @@ class Updater {
 
 		$response = wp_remote_get(
 			$api_url,
-			[
+			array(
 				'timeout' => 15,
-				'headers' => [
+				'headers' => array(
 					'Accept'     => 'application/vnd.github.v3+json',
 					'User-Agent' => 'WordPress/' . get_bloginfo( 'version' ) . '; ' . home_url(),
-				],
-			]
+				),
+			)
 		);
 
 		if ( is_wp_error( $response ) ) {
@@ -282,7 +282,7 @@ class Updater {
 			$download_url = $data->zipball_url ?? '';
 		}
 
-		return (object) [
+		return (object) array(
 			'name'         => 'AI Author for Websites',
 			'version'      => $version,
 			'download_url' => $download_url,
@@ -291,11 +291,11 @@ class Updater {
 			'tested'       => '6.4',
 			'requires_php' => '8.0',
 			'description'  => 'AI-powered blog post generator. Train the AI with your knowledge base and create high-quality content.',
-			'sections'     => (object) [
+			'sections'     => (object) array(
 				'description' => $this->get_default_description(),
 				'changelog'   => $this->parse_changelog( $data->body ?? '' ),
-			],
-		];
+			),
+		);
 	}
 
 	/**
@@ -440,4 +440,3 @@ class Updater {
 		return version_compare( $this->version, $latest, '<' );
 	}
 }
-

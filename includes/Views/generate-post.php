@@ -18,14 +18,14 @@ $has_knowledge     = $summary['count'] > 0;
 
 // Get authors.
 $authors = get_users(
-	[
-		'capability' => [ 'edit_posts' ],
+	array(
+		'capability' => array( 'edit_posts' ),
 		'orderby'    => 'display_name',
-	]
+	)
 );
 
 // Get categories.
-$categories = get_categories( [ 'hide_empty' => false ] );
+$categories = get_categories( array( 'hide_empty' => false ) );
 ?>
 <div class="wrap aiauthor-admin">
 	<h1><?php esc_html_e( 'Generate Blog Post', 'ai-author-for-websites' ); ?></h1>

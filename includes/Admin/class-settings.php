@@ -84,20 +84,20 @@ class Settings {
 	 * Render the tab navigation.
 	 */
 	private function render_tabs() {
-		$tabs = [
-			'general'     => [
+		$tabs = array(
+			'general'     => array(
 				'label' => __( 'General', 'ai-author-for-websites' ),
 				'icon'  => 'dashicons-admin-settings',
-			],
-			'ai-provider' => [
+			),
+			'ai-provider' => array(
 				'label' => __( 'AI Provider', 'ai-author-for-websites' ),
 				'icon'  => 'dashicons-cloud',
-			],
-			'content'     => [
+			),
+			'content'     => array(
 				'label' => __( 'Content Settings', 'ai-author-for-websites' ),
 				'icon'  => 'dashicons-editor-paragraph',
-			],
-		];
+			),
+		);
 
 		$base_url = admin_url( 'admin.php?page=ai-author-settings' );
 		?>

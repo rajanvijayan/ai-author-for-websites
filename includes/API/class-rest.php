@@ -37,66 +37,66 @@ class REST {
 		register_rest_route(
 			$this->namespace,
 			'/test-connection',
-			[
+			array(
 				'methods'             => 'POST',
-				'callback'            => [ $this, 'test_connection' ],
-				'permission_callback' => [ $this, 'admin_permission_check' ],
-			]
+				'callback'            => array( $this, 'test_connection' ),
+				'permission_callback' => array( $this, 'admin_permission_check' ),
+			)
 		);
 
 		// Generate blog post.
 		register_rest_route(
 			$this->namespace,
 			'/generate-post',
-			[
+			array(
 				'methods'             => 'POST',
-				'callback'            => [ $this, 'generate_post' ],
-				'permission_callback' => [ $this, 'admin_permission_check' ],
-			]
+				'callback'            => array( $this, 'generate_post' ),
+				'permission_callback' => array( $this, 'admin_permission_check' ),
+			)
 		);
 
 		// Save generated post as draft.
 		register_rest_route(
 			$this->namespace,
 			'/save-draft',
-			[
+			array(
 				'methods'             => 'POST',
-				'callback'            => [ $this, 'save_draft' ],
-				'permission_callback' => [ $this, 'admin_permission_check' ],
-			]
+				'callback'            => array( $this, 'save_draft' ),
+				'permission_callback' => array( $this, 'admin_permission_check' ),
+			)
 		);
 
 		// Get knowledge base summary.
 		register_rest_route(
 			$this->namespace,
 			'/knowledge-summary',
-			[
+			array(
 				'methods'             => 'GET',
-				'callback'            => [ $this, 'get_knowledge_summary' ],
-				'permission_callback' => [ $this, 'admin_permission_check' ],
-			]
+				'callback'            => array( $this, 'get_knowledge_summary' ),
+				'permission_callback' => array( $this, 'admin_permission_check' ),
+			)
 		);
 
 		// AI Suggestion endpoint.
 		register_rest_route(
 			$this->namespace,
 			'/ai-suggest',
-			[
+			array(
 				'methods'             => 'POST',
-				'callback'            => [ $this, 'ai_suggest' ],
-				'permission_callback' => [ $this, 'admin_permission_check' ],
-			]
+				'callback'            => array( $this, 'ai_suggest' ),
+				'permission_callback' => array( $this, 'admin_permission_check' ),
+			)
 		);
 
 		// Suggest categories and tags.
 		register_rest_route(
 			$this->namespace,
 			'/suggest-taxonomy',
-			[
+			array(
 				'methods'             => 'POST',
-				'callback'            => [ $this, 'suggest_taxonomy' ],
-				'permission_callback' => [ $this, 'admin_permission_check' ],
-			]
+				'callback'            => array( $this, 'suggest_taxonomy' ),
+				'permission_callback' => array( $this, 'admin_permission_check' ),
+			)
 		);
 	}
 
@@ -120,10 +120,10 @@ class REST {
 
 		if ( empty( $settings['api_key'] ) ) {
 			return new \WP_REST_Response(
-				[
+				array(
 					'success' => false,
 					'message' => __( 'API key is not configured.', 'ai-author-for-websites' ),
-				],
+				),
 				400
 			);
 		}
@@ -131,39 +131,39 @@ class REST {
 		try {
 			$ai = new AIEngine(
 				$settings['api_key'],
-				[
+				array(
 					'provider' => $settings['provider'] ?? 'groq',
 					'model'    => $settings['model'] ?? 'llama-3.3-70b-versatile',
 					'timeout'  => 30,
-				]
+				)
 			);
 
 			$response = $ai->generateContent( 'Say "Hello! Connection successful." in exactly those words.' );
 
 			if ( is_array( $response ) && isset( $response['error'] ) ) {
 				return new \WP_REST_Response(
-					[
+					array(
 						'success' => false,
 						'message' => $response['error'],
-					],
+					),
 					400
 				);
 			}
 
 			return new \WP_REST_Response(
-				[
+				array(
 					'success'  => true,
 					'message'  => __( 'Connection successful!', 'ai-author-for-websites' ),
 					'provider' => $ai->getProviderName(),
-				],
+				),
 				200
 			);
 		} catch ( \Exception $e ) {
 			return new \WP_REST_Response(
-				[
+				array(
 					'success' => false,
 					'message' => $e->getMessage(),
-				],
+				),
 				500
 			);
 		}
@@ -180,24 +180,26 @@ class REST {
 
 		if ( empty( $settings['api_key'] ) ) {
 			return new \WP_REST_Response(
-				[
+				array(
 					'success' => false,
 					'message' => __( 'API key is not configured. Please configure it in Settings.', 'ai-author-for-websites' ),
-				],
+				),
 				400
 			);
 		}
 
 		$topic      = sanitize_text_field( $request->get_param( 'topic' ) );
-		$word_count = absint( $request->get_param( 'word_count' ) ) ?: ( $settings['default_word_count'] ?? 1000 );
-		$tone       = sanitize_text_field( $request->get_param( 'tone' ) ) ?: 'professional';
+		$word_count = absint( $request->get_param( 'word_count' ) );
+		$word_count = $word_count > 0 ? $word_count : ( isset( $settings['default_word_count'] ) ? $settings['default_word_count'] : 1000 );
+		$tone       = sanitize_text_field( $request->get_param( 'tone' ) );
+		$tone       = ! empty( $tone ) ? $tone : 'professional';
 
 		if ( empty( $topic ) ) {
 			return new \WP_REST_Response(
-				[
+				array(
 					'success' => false,
 					'message' => __( 'Please provide a topic.', 'ai-author-for-websites' ),
-				],
+				),
 				400
 			);
 		}
@@ -205,11 +207,11 @@ class REST {
 		try {
 			$ai = new AIEngine(
 				$settings['api_key'],
-				[
+				array(
 					'provider' => $settings['provider'] ?? 'groq',
 					'model'    => $settings['model'] ?? 'llama-3.3-70b-versatile',
 					'timeout'  => 120,
-				]
+				)
 			);
 
 			// Get knowledge base context.
@@ -228,10 +230,10 @@ class REST {
 
 			if ( is_array( $response ) && isset( $response['error'] ) ) {
 				return new \WP_REST_Response(
-					[
+					array(
 						'success' => false,
 						'message' => $response['error'],
-					],
+					),
 					400
 				);
 			}
@@ -240,19 +242,19 @@ class REST {
 			$parsed = $this->parse_generated_content( $response );
 
 			return new \WP_REST_Response(
-				[
+				array(
 					'success' => true,
 					'title'   => $parsed['title'],
 					'content' => $parsed['content'],
-				],
+				),
 				200
 			);
 		} catch ( \Exception $e ) {
 			return new \WP_REST_Response(
-				[
+				array(
 					'success' => false,
 					'message' => $e->getMessage(),
-				],
+				),
 				500
 			);
 		}
@@ -269,10 +271,10 @@ class REST {
 
 		if ( empty( $settings['api_key'] ) ) {
 			return new \WP_REST_Response(
-				[
+				array(
 					'success' => false,
 					'message' => __( 'API key is not configured.', 'ai-author-for-websites' ),
-				],
+				),
 				400
 			);
 		}
@@ -283,11 +285,11 @@ class REST {
 		try {
 			$ai = new AIEngine(
 				$settings['api_key'],
-				[
+				array(
 					'provider' => $settings['provider'] ?? 'groq',
 					'model'    => $settings['model'] ?? 'llama-3.3-70b-versatile',
 					'timeout'  => 60,
-				]
+				)
 			);
 
 			$prompt = $this->build_suggestion_prompt( $type, $custom_prompt );
@@ -295,27 +297,27 @@ class REST {
 
 			if ( is_array( $response ) && isset( $response['error'] ) ) {
 				return new \WP_REST_Response(
-					[
+					array(
 						'success' => false,
 						'message' => $response['error'],
-					],
+					),
 					400
 				);
 			}
 
 			return new \WP_REST_Response(
-				[
+				array(
 					'success'    => true,
 					'suggestion' => trim( $response ),
-				],
+				),
 				200
 			);
 		} catch ( \Exception $e ) {
 			return new \WP_REST_Response(
-				[
+				array(
 					'success' => false,
 					'message' => $e->getMessage(),
-				],
+				),
 				500
 			);
 		}
@@ -332,10 +334,10 @@ class REST {
 
 		if ( empty( $settings['api_key'] ) ) {
 			return new \WP_REST_Response(
-				[
+				array(
 					'success' => false,
 					'message' => __( 'API key is not configured.', 'ai-author-for-websites' ),
-				],
+				),
 				400
 			);
 		}
@@ -345,10 +347,10 @@ class REST {
 
 		if ( empty( $title ) && empty( $content ) ) {
 			return new \WP_REST_Response(
-				[
+				array(
 					'success' => false,
 					'message' => __( 'Please provide title or content.', 'ai-author-for-websites' ),
-				],
+				),
 				400
 			);
 		}
@@ -356,29 +358,29 @@ class REST {
 		try {
 			$ai = new AIEngine(
 				$settings['api_key'],
-				[
+				array(
 					'provider' => $settings['provider'] ?? 'groq',
 					'model'    => $settings['model'] ?? 'llama-3.3-70b-versatile',
 					'timeout'  => 60,
-				]
+				)
 			);
 
 			// Get existing categories and tags.
-			$existing_categories = get_categories( [ 'hide_empty' => false ] );
-			$existing_tags       = get_tags( [ 'hide_empty' => false ] );
+			$existing_categories = get_categories( array( 'hide_empty' => false ) );
+			$existing_tags       = get_tags( array( 'hide_empty' => false ) );
 
 			$cat_names = array_map( fn( $c ) => $c->name, $existing_categories );
 			$tag_names = array_map( fn( $t ) => $t->name, $existing_tags );
 
 			$prompt = "Based on the following blog post, suggest appropriate categories and tags.\n\n";
 			$prompt .= "Title: {$title}\n\n";
-			$prompt .= "Content (excerpt): " . wp_trim_words( wp_strip_all_tags( $content ), 200 ) . "\n\n";
+			$prompt .= 'Content (excerpt): ' . wp_trim_words( wp_strip_all_tags( $content ), 200 ) . "\n\n";
 
 			if ( ! empty( $cat_names ) ) {
-				$prompt .= "Existing categories in the site: " . implode( ', ', $cat_names ) . "\n";
+				$prompt .= 'Existing categories in the site: ' . implode( ', ', $cat_names ) . "\n";
 			}
 			if ( ! empty( $tag_names ) ) {
-				$prompt .= "Existing tags in the site: " . implode( ', ', array_slice( $tag_names, 0, 50 ) ) . "\n";
+				$prompt .= 'Existing tags in the site: ' . implode( ', ', array_slice( $tag_names, 0, 50 ) ) . "\n";
 			}
 
 			$prompt .= "\nRespond in this exact JSON format:\n";
@@ -389,10 +391,10 @@ class REST {
 
 			if ( is_array( $response ) && isset( $response['error'] ) ) {
 				return new \WP_REST_Response(
-					[
+					array(
 						'success' => false,
 						'message' => $response['error'],
-					],
+					),
 					400
 				);
 			}
@@ -402,41 +404,41 @@ class REST {
 			$suggestions = $json_match ? json_decode( $matches[0], true ) : null;
 
 			if ( ! $suggestions ) {
-				$suggestions = [
-					'categories' => [],
-					'tags'       => [],
-				];
+				$suggestions = array(
+					'categories' => array(),
+					'tags'       => array(),
+				);
 			}
 
 			return new \WP_REST_Response(
-				[
+				array(
 					'success'     => true,
 					'suggestions' => $suggestions,
-					'existing'    => [
+					'existing'    => array(
 						'categories' => array_map(
-							fn( $c ) => [
+							fn( $c ) => array(
 								'id'   => $c->term_id,
 								'name' => $c->name,
-							],
+							),
 							$existing_categories
 						),
 						'tags'       => array_map(
-							fn( $t ) => [
+							fn( $t ) => array(
 								'id'   => $t->term_id,
 								'name' => $t->name,
-							],
+							),
 							$existing_tags
 						),
-					],
-				],
+					),
+				),
 				200
 			);
 		} catch ( \Exception $e ) {
 			return new \WP_REST_Response(
-				[
+				array(
 					'success' => false,
 					'message' => $e->getMessage(),
-				],
+				),
 				500
 			);
 		}
@@ -469,7 +471,7 @@ class REST {
 				$prompt .= "3. Mentions SEO best practices\n";
 				$prompt .= "4. Includes formatting guidelines\n";
 				$prompt .= "5. Is specific to this website's purpose\n\n";
-				$prompt .= "Return only the system instruction text, no explanations.";
+				$prompt .= 'Return only the system instruction text, no explanations.';
 				break;
 
 			default:
@@ -507,7 +509,7 @@ class REST {
 			$prompt .= $knowledge_context . "\n\n";
 		}
 
-		$prompt .= "Now write the blog post:";
+		$prompt .= 'Now write the blog post:';
 
 		return $prompt;
 	}
@@ -546,10 +548,10 @@ class REST {
 
 		$body_content = $this->markdown_to_html( $body_content );
 
-		return [
+		return array(
 			'title'   => $title,
 			'content' => trim( $body_content ),
-		];
+		);
 	}
 
 	/**
@@ -593,35 +595,37 @@ class REST {
 	public function save_draft( $request ) {
 		$title         = sanitize_text_field( $request->get_param( 'title' ) );
 		$content       = wp_kses_post( $request->get_param( 'content' ) );
-		$author_id     = absint( $request->get_param( 'author_id' ) ) ?: get_current_user_id();
+		$author_id     = absint( $request->get_param( 'author_id' ) );
+		$author_id     = $author_id > 0 ? $author_id : get_current_user_id();
 		$categories    = $request->get_param( 'categories' );
 		$tags          = $request->get_param( 'tags' );
-		$status        = sanitize_text_field( $request->get_param( 'status' ) ) ?: 'draft';
+		$status        = sanitize_text_field( $request->get_param( 'status' ) );
+		$status        = ! empty( $status ) ? $status : 'draft';
 		$schedule_date = sanitize_text_field( $request->get_param( 'schedule_date' ) );
 
 		if ( empty( $title ) || empty( $content ) ) {
 			return new \WP_REST_Response(
-				[
+				array(
 					'success' => false,
 					'message' => __( 'Title and content are required.', 'ai-author-for-websites' ),
-				],
+				),
 				400
 			);
 		}
 
 		// Validate status.
-		$allowed_statuses = [ 'draft', 'publish', 'future' ];
+		$allowed_statuses = array( 'draft', 'publish', 'future' );
 		if ( ! in_array( $status, $allowed_statuses, true ) ) {
 			$status = 'draft';
 		}
 
-		$post_data = [
+		$post_data = array(
 			'post_title'   => $title,
 			'post_content' => $content,
 			'post_status'  => $status,
 			'post_type'    => 'post',
 			'post_author'  => $author_id,
-		];
+		);
 
 		// Handle scheduled posts.
 		if ( 'future' === $status && ! empty( $schedule_date ) ) {
@@ -633,17 +637,17 @@ class REST {
 
 		if ( is_wp_error( $post_id ) ) {
 			return new \WP_REST_Response(
-				[
+				array(
 					'success' => false,
 					'message' => $post_id->get_error_message(),
-				],
+				),
 				500
 			);
 		}
 
 		// Handle categories.
 		if ( ! empty( $categories ) ) {
-			$category_ids = [];
+			$category_ids = array();
 			foreach ( $categories as $cat ) {
 				if ( is_numeric( $cat ) ) {
 					$category_ids[] = absint( $cat );
@@ -679,14 +683,14 @@ class REST {
 		}
 
 		return new \WP_REST_Response(
-			[
+			array(
 				'success'  => true,
 				'post_id'  => $post_id,
 				'status'   => $status,
 				'edit_url' => get_edit_post_link( $post_id, 'raw' ),
 				'view_url' => get_permalink( $post_id ),
 				'message'  => $message,
-			],
+			),
 			200
 		);
 	}
@@ -703,12 +707,11 @@ class REST {
 		$summary           = $kb->getSummary();
 
 		return new \WP_REST_Response(
-			[
+			array(
 				'success' => true,
 				'summary' => $summary,
-			],
+			),
 			200
 		);
 	}
 }
-

@@ -208,4 +208,3 @@ class Manager {
 		return $context;
 	}
 }
-

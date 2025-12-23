@@ -47,5 +47,18 @@
             <property name="blank_line_check" value="true"/>
         </properties>
     </rule>
+
+    <!-- Exclude global variable checks in view files (template files use local variables) -->
+    <rule ref="WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound">
+        <exclude-pattern>/includes/Views/*</exclude-pattern>
+    </rule>
+    <rule ref="WordPress.WP.GlobalVariablesOverride.Prohibited">
+        <exclude-pattern>/includes/Views/*</exclude-pattern>
+    </rule>
+
+    <!-- Allow mixed functions and classes in main plugin file -->
+    <rule ref="Universal.Files.SeparateFunctionsFromOO.Mixed">
+        <exclude-pattern>ai-author-for-websites.php</exclude-pattern>
+    </rule>
 </ruleset>
 

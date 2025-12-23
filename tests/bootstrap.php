@@ -5,8 +5,10 @@
  * @package AI_Author_For_Websites
  */
 
-// Define test constants.
-define( 'AIAUTHOR_TESTING', true );
+// Define test constants (only if not already defined).
+if ( ! defined( 'AIAUTHOR_TESTING' ) ) {
+	define( 'AIAUTHOR_TESTING', true );
+}
 define( 'ABSPATH', __DIR__ . '/stubs/' );
 define( 'AIAUTHOR_PLUGIN_DIR', dirname( __DIR__ ) . '/' );
 define( 'AIAUTHOR_PLUGIN_URL', 'https://example.com/wp-content/plugins/ai-author-for-websites/' );

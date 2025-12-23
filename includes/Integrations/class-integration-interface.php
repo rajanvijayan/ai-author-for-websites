@@ -154,4 +154,3 @@ interface IntegrationInterface {
 	 */
 	public function is_builtin(): bool;
 }
-

@@ -16,30 +16,31 @@ $plugin_settings      = \AIAuthor\Core\Plugin::get_settings();
 $has_api_key          = ! empty( $plugin_settings['api_key'] );
 
 // Handle form submission.
+// phpcs:disable WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- All inputs are sanitized appropriately.
 if ( isset( $_POST['aiauthor_scheduler_save'] ) && check_admin_referer( 'aiauthor_scheduler_nonce' ) ) {
-	$new_settings = [
+	$aiauthor_new_settings = array(
 		'enabled'               => ! empty( $_POST['enabled'] ),
-		'frequency'             => sanitize_key( $_POST['frequency'] ?? 'weekly' ),
-		'scheduled_day'         => sanitize_key( $_POST['scheduled_day'] ?? 'monday' ),
-		'scheduled_time'        => sanitize_text_field( $_POST['scheduled_time'] ?? '09:00' ),
-		'post_status'           => sanitize_key( $_POST['post_status'] ?? 'publish' ),
+		'frequency'             => sanitize_key( isset( $_POST['frequency'] ) ? $_POST['frequency'] : 'weekly' ),
+		'scheduled_day'         => sanitize_key( isset( $_POST['scheduled_day'] ) ? $_POST['scheduled_day'] : 'monday' ),
+		'scheduled_time'        => sanitize_text_field( isset( $_POST['scheduled_time'] ) ? wp_unslash( $_POST['scheduled_time'] ) : '09:00' ),
+		'post_status'           => sanitize_key( isset( $_POST['post_status'] ) ? $_POST['post_status'] : 'publish' ),
 		'auto_generate_topics'  => ! empty( $_POST['auto_generate_topics'] ),
-		'word_count'            => absint( $_POST['word_count'] ?? 1000 ),
-		'tone'                  => sanitize_text_field( $_POST['tone'] ?? 'professional' ),
-		'default_author'        => absint( $_POST['default_author'] ?? 0 ),
-		'default_category'      => absint( $_POST['default_category'] ?? 0 ),
+		'word_count'            => absint( isset( $_POST['word_count'] ) ? $_POST['word_count'] : 1000 ),
+		'tone'                  => sanitize_text_field( isset( $_POST['tone'] ) ? wp_unslash( $_POST['tone'] ) : 'professional' ),
+		'default_author'        => absint( isset( $_POST['default_author'] ) ? $_POST['default_author'] : 0 ),
+		'default_category'      => absint( isset( $_POST['default_category'] ) ? $_POST['default_category'] : 0 ),
 		'ai_generate_category'  => ! empty( $_POST['ai_generate_category'] ),
-	];
+	);
 
 	// Handle topics.
-	$topics_raw = sanitize_textarea_field( $_POST['topics'] ?? '' );
-	$topics     = array_filter( array_map( 'trim', explode( "\n", $topics_raw ) ) );
-	$new_settings['topics'] = $topics;
+	$aiauthor_topics_raw = isset( $_POST['topics'] ) ? sanitize_textarea_field( wp_unslash( $_POST['topics'] ) ) : '';
+	$aiauthor_topics     = array_filter( array_map( 'trim', explode( "\n", $aiauthor_topics_raw ) ) );
+	$aiauthor_new_settings['topics'] = $aiauthor_topics;
 
-	$scheduler->update_settings( $new_settings );
+	$scheduler->update_settings( $aiauthor_new_settings );
 
 	// Reschedule if enabled.
-	if ( $new_settings['enabled'] ) {
+	if ( $aiauthor_new_settings['enabled'] ) {
 		$scheduler->schedule_next_run();
 	} else {
 		$scheduler->on_deactivate();
@@ -57,14 +58,14 @@ $logs        = $scheduler->get_logs( 10 );
 
 // Get authors.
 $authors = get_users(
-	[
-		'capability' => [ 'edit_posts' ],
+	array(
+		'capability' => array( 'edit_posts' ),
 		'orderby'    => 'display_name',
-	]
+	)
 );
 
 // Get categories.
-$categories = get_categories( [ 'hide_empty' => false ] );
+$categories = get_categories( array( 'hide_empty' => false ) );
 
 // Get next scheduled run.
 $next_run = wp_next_scheduled( 'aiauthor_auto_scheduler_generate' );
@@ -246,7 +247,7 @@ $next_run = wp_next_scheduled( 'aiauthor_auto_scheduler_generate' );
 											name="topics" 
 											rows="5" 
 											class="large-text"
-											placeholder="<?php esc_attr_e( 'One topic per line...', 'ai-author-for-websites' ); ?>"><?php echo esc_textarea( implode( "\n", $settings['topics'] ?? [] ) ); ?></textarea>
+											placeholder="<?php esc_attr_e( 'One topic per line...', 'ai-author-for-websites' ); ?>"><?php echo esc_textarea( implode( "\n", $settings['topics'] ?? array() ) ); ?></textarea>
 								<p class="description">
 									<?php esc_html_e( 'Enter topics to generate (one per line). Posts will be generated in order.', 'ai-author-for-websites' ); ?>
 								</p>
@@ -396,7 +397,7 @@ $next_run = wp_next_scheduled( 'aiauthor_auto_scheduler_generate' );
 							<span class="aiauthor-stat-label"><?php esc_html_e( 'Posts Generated', 'ai-author-for-websites' ); ?></span>
 						</div>
 						<div class="aiauthor-stat-item">
-							<span class="aiauthor-stat-number"><?php echo esc_html( count( $settings['topics'] ?? [] ) ); ?></span>
+							<span class="aiauthor-stat-number"><?php echo esc_html( count( $settings['topics'] ?? array() ) ); ?></span>
 							<span class="aiauthor-stat-label"><?php esc_html_e( 'Topics in Queue', 'ai-author-for-websites' ); ?></span>
 						</div>
 					</div>

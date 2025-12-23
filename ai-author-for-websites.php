@@ -58,9 +58,12 @@ function aiauthor_init() {
 add_action( 'plugins_loaded', 'aiauthor_init' );
 
 // Initialize updater.
-add_action( 'admin_init', function() {
-	\AIAuthor\Updater\Updater::get_instance();
-});
+add_action(
+	'admin_init',
+	function () {
+		\AIAuthor\Updater\Updater::get_instance();
+	}
+);
 
 // Add settings link on plugins page.
 add_filter(
