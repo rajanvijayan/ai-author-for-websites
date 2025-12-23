@@ -37,6 +37,11 @@ require_once AIAUTHOR_PLUGIN_DIR . 'includes/Admin/class-settings.php';
 require_once AIAUTHOR_PLUGIN_DIR . 'includes/Knowledge/class-manager.php';
 require_once AIAUTHOR_PLUGIN_DIR . 'includes/API/class-rest.php';
 
+// Load Integrations framework.
+require_once AIAUTHOR_PLUGIN_DIR . 'includes/Integrations/class-integration-interface.php';
+require_once AIAUTHOR_PLUGIN_DIR . 'includes/Integrations/class-integration-base.php';
+require_once AIAUTHOR_PLUGIN_DIR . 'includes/Integrations/class-manager.php';
+
 /**
  * Initialize plugin.
  *
