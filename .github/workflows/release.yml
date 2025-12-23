@@ -12,7 +12,7 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -22,91 +22,76 @@ jobs:
         with:
           php-version: '8.2'
           tools: composer:v2
-          coverage: none
-
-      - name: Install production dependencies
-        run: composer install --prefer-dist --no-dev --optimize-autoloader
 
       - name: Get version from tag
-        id: version
-        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Create plugin zip
+      - name: Install production dependencies
+        run: composer install --prefer-dist --no-progress --no-dev --optimize-autoloader
+
+      - name: Create plugin directory
         run: |
-          mkdir -p dist
-          rsync -av --exclude='.git' \
-                    --exclude='.github' \
-                    --exclude='tests' \
-                    --exclude='phpunit.xml' \
-                    --exclude='phpcs.xml' \
-                    --exclude='.gitignore' \
-                    --exclude='composer.lock' \
-                    --exclude='dist' \
-                    --exclude='node_modules' \
-                    --exclude='.cursor' \
-                    --exclude='*.md' \
-                    --exclude='key.ai' \
-                    ./ dist/ai-author-for-websites/
+          mkdir -p build/ai-author-for-websites
           
-          # Keep README.md in the release
-          cp README.md dist/ai-author-for-websites/
+          # Copy only necessary files
+          cp -r assets build/ai-author-for-websites/
+          cp -r includes build/ai-author-for-websites/
+          cp -r vendor build/ai-author-for-websites/
+          cp ai-author-for-websites.php build/ai-author-for-websites/
+          cp readme.txt build/ai-author-for-websites/
+          cp README.md build/ai-author-for-websites/
+          cp CHANGELOG.md build/ai-author-for-websites/
           
-          cd dist
-          zip -r ai-author-for-websites-${{ steps.version.outputs.version }}.zip ai-author-for-websites/
+          # Remove unnecessary files from vendor
+          find build/ai-author-for-websites/vendor -name "*.md" -type f -delete
+          find build/ai-author-for-websites/vendor -name "*.txt" -type f -delete
+          find build/ai-author-for-websites/vendor -name ".git*" -type f -delete
+          find build/ai-author-for-websites/vendor -name "tests" -type d -exec rm -rf {} + 2>/dev/null || true
+          find build/ai-author-for-websites/vendor -name "test" -type d -exec rm -rf {} + 2>/dev/null || true
+          find build/ai-author-for-websites/vendor -name "Tests" -type d -exec rm -rf {} + 2>/dev/null || true
+          find build/ai-author-for-websites/vendor -name "phpunit.xml" -type f -delete
+          find build/ai-author-for-websites/vendor -name "phpunit.xml.dist" -type f -delete
+          find build/ai-author-for-websites/vendor -name ".travis.yml" -type f -delete
+          find build/ai-author-for-websites/vendor -name ".github" -type d -exec rm -rf {} + 2>/dev/null || true
 
-      - name: Generate changelog
+      - name: Create ZIP archive
+        run: |
+          cd build
+          zip -r ../ai-author-for-websites-${{ steps.get_version.outputs.VERSION }}.zip ai-author-for-websites
+
+      - name: Extract changelog for version
         id: changelog
         run: |
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          git log $(git describe --tags --abbrev=0 HEAD^)..HEAD --pretty=format:"- %s" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Extract changelog content for the current version
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          
+          # Get the content between the current version header and the next version header (or EOF)
+          CHANGELOG_CONTENT=$(awk "/^## \[$VERSION\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)
+          
+          # If no specific version found, use Unreleased section
+          if [ -z "$CHANGELOG_CONTENT" ]; then
+            CHANGELOG_CONTENT=$(awk '/^## \[Unreleased\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md)
+          fi
+          
+          # Write to file for the release notes
+          echo "$CHANGELOG_CONTENT" > release_notes.md
 
-      - name: Create Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/ai-author-for-websites-${{ steps.version.outputs.version }}.zip
-          body: |
-            ## AI Author for Websites v${{ steps.version.outputs.version }}
-            
-            ### Changes
-            ${{ steps.changelog.outputs.changelog }}
-            
-            ### Installation
-            1. Download the zip file below
-            2. Go to WordPress Admin → Plugins → Add New → Upload Plugin
-            3. Upload the zip file and activate
-            
-            ### Requirements
-            - WordPress 5.8+
-            - PHP 8.0+
+          name: v${{ steps.get_version.outputs.VERSION }}
+          body_path: release_notes.md
           draft: false
-          prerelease: false
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+          files: |
+            ai-author-for-websites-${{ steps.get_version.outputs.VERSION }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update update server info
-        run: |
-          # Create update info JSON for self-hosted updates
-          cat > dist/update-info.json << 'EOF'
-          {
-            "name": "AI Author for Websites",
-            "slug": "ai-author-for-websites",
-            "version": "${{ steps.version.outputs.version }}",
-            "download_url": "https://github.com/rajanvijayan/ai-author-for-websites/releases/download/v${{ steps.version.outputs.version }}/ai-author-for-websites-${{ steps.version.outputs.version }}.zip",
-            "requires": "5.8",
-            "tested": "6.4",
-            "requires_php": "8.0",
-            "last_updated": "${{ github.event.head_commit.timestamp }}",
-            "sections": {
-              "description": "AI-powered blog post generator. Train the AI with your knowledge base and create high-quality content.",
-              "changelog": "${{ steps.changelog.outputs.changelog }}"
-            }
-          }
-          EOF
-
-      - name: Upload update info
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: update-info
-          path: dist/update-info.json
-          retention-days: 90
-
+          name: ai-author-for-websites-${{ steps.get_version.outputs.VERSION }}
+          path: ai-author-for-websites-${{ steps.get_version.outputs.VERSION }}.zip
+          retention-days: 30

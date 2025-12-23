@@ -1,0 +1,189 @@
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - '.github/**'
+      - '*.md'
+      - '!CHANGELOG.md'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+
+      - name: Extract version from plugin file
+        id: get_version
+        run: |
+          # Extract version from the main plugin file
+          VERSION=$(grep -m1 "Version:" ai-author-for-websites.php | sed 's/.*Version:[[:space:]]*//' | tr -d '[:space:]')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+          
+          # Also get the constant version
+          CONST_VERSION=$(grep "AIAUTHOR_VERSION" ai-author-for-websites.php | grep "define" | sed "s/.*'\\([^']*\\)'.*/\\1/")
+          echo "CONST_VERSION=$CONST_VERSION" >> $GITHUB_OUTPUT
+          echo "Constant version: $CONST_VERSION"
+
+      - name: Check if release already exists
+        id: check_release
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          
+          # Check if tag already exists
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Tag v$VERSION already exists"
+            echo "EXISTS=true" >> $GITHUB_OUTPUT
+          else
+            echo "Tag v$VERSION does not exist"
+            echo "EXISTS=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install production dependencies
+        if: steps.check_release.outputs.EXISTS == 'false'
+        run: composer install --prefer-dist --no-progress --no-dev --optimize-autoloader
+
+      - name: Create plugin build
+        if: steps.check_release.outputs.EXISTS == 'false'
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          
+          mkdir -p build/ai-author-for-websites
+          
+          # Copy only necessary files for production
+          cp -r assets build/ai-author-for-websites/
+          cp -r includes build/ai-author-for-websites/
+          cp -r vendor build/ai-author-for-websites/
+          cp ai-author-for-websites.php build/ai-author-for-websites/
+          cp readme.txt build/ai-author-for-websites/
+          cp README.md build/ai-author-for-websites/
+          cp CHANGELOG.md build/ai-author-for-websites/
+          
+          # Copy languages directory if it exists
+          if [ -d "languages" ]; then
+            cp -r languages build/ai-author-for-websites/
+          fi
+          
+          # Clean up vendor directory (remove dev files)
+          find build/ai-author-for-websites/vendor -name "*.md" -type f -delete 2>/dev/null || true
+          find build/ai-author-for-websites/vendor -name "*.txt" -type f ! -name "LICENSE*" -delete 2>/dev/null || true
+          find build/ai-author-for-websites/vendor -name ".git*" -type f -delete 2>/dev/null || true
+          find build/ai-author-for-websites/vendor -name "tests" -type d -exec rm -rf {} + 2>/dev/null || true
+          find build/ai-author-for-websites/vendor -name "test" -type d -exec rm -rf {} + 2>/dev/null || true
+          find build/ai-author-for-websites/vendor -name "Tests" -type d -exec rm -rf {} + 2>/dev/null || true
+          find build/ai-author-for-websites/vendor -name "phpunit.xml*" -type f -delete 2>/dev/null || true
+          find build/ai-author-for-websites/vendor -name ".travis.yml" -type f -delete 2>/dev/null || true
+          find build/ai-author-for-websites/vendor -name ".github" -type d -exec rm -rf {} + 2>/dev/null || true
+          find build/ai-author-for-websites/vendor -name "composer.json" -type f -delete 2>/dev/null || true
+          find build/ai-author-for-websites/vendor -name "composer.lock" -type f -delete 2>/dev/null || true
+          
+          echo "Build directory created successfully"
+          ls -la build/ai-author-for-websites/
+
+      - name: Create ZIP archive
+        if: steps.check_release.outputs.EXISTS == 'false'
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          cd build
+          zip -r ../ai-author-for-websites-${VERSION}.zip ai-author-for-websites
+          cd ..
+          echo "ZIP file created: ai-author-for-websites-${VERSION}.zip"
+          ls -la ai-author-for-websites-${VERSION}.zip
+
+      - name: Extract changelog for version
+        if: steps.check_release.outputs.EXISTS == 'false'
+        id: changelog
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          
+          # Extract changelog content for the current version
+          CHANGELOG_CONTENT=$(awk "/^## \[$VERSION\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)
+          
+          # If no specific version found, try with brackets
+          if [ -z "$CHANGELOG_CONTENT" ]; then
+            CHANGELOG_CONTENT=$(awk '/^## \[Unreleased\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md)
+          fi
+          
+          # If still empty, provide a default message
+          if [ -z "$CHANGELOG_CONTENT" ]; then
+            CHANGELOG_CONTENT="Release of version $VERSION"
+          fi
+          
+          # Write to file for the release notes
+          echo "## What's Changed" > release_notes.md
+          echo "" >> release_notes.md
+          echo "$CHANGELOG_CONTENT" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "---" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/...v${VERSION}" >> release_notes.md
+          
+          echo "Release notes generated:"
+          cat release_notes.md
+
+      - name: Create Git Tag
+        if: steps.check_release.outputs.EXISTS == 'false'
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+          git push origin "v$VERSION"
+
+      - name: Create GitHub Release
+        if: steps.check_release.outputs.EXISTS == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.VERSION }}
+          name: AI Author for Websites v${{ steps.get_version.outputs.VERSION }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ contains(steps.get_version.outputs.VERSION, 'alpha') || contains(steps.get_version.outputs.VERSION, 'beta') || contains(steps.get_version.outputs.VERSION, 'rc') }}
+          files: |
+            ai-author-for-websites-${{ steps.get_version.outputs.VERSION }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build artifact
+        if: steps.check_release.outputs.EXISTS == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-author-for-websites-${{ steps.get_version.outputs.VERSION }}
+          path: ai-author-for-websites-${{ steps.get_version.outputs.VERSION }}.zip
+          retention-days: 30
+
+      - name: Summary
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          EXISTS=${{ steps.check_release.outputs.EXISTS }}
+          
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$EXISTS" == "true" ]; then
+            echo "⏭️ **Skipped**: Release v$VERSION already exists" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **Created**: Release v$VERSION" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Assets" >> $GITHUB_STEP_SUMMARY
+            echo "- 📦 \`ai-author-for-websites-$VERSION.zip\`" >> $GITHUB_STEP_SUMMARY
+          fi
+

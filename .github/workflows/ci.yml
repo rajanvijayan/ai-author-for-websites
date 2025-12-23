@@ -2,52 +2,34 @@ name: CI
 
 on:
   push:
-    branches: [main, develop, 'feature/**']
+    branches:
+      - main
+      - master
+      - develop
   pull_request:
-    branches: [main, develop]
+    branches:
+      - main
+      - master
+      - develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Code Standards
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          tools: composer:v2
-          coverage: none
-
-      - name: Get Composer cache directory
-        id: composer-cache
-        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-
-      - name: Cache Composer dependencies
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
-
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress
-
-      - name: Run PHPCS
-        run: composer phpcs
-
+  # PHP Unit Tests
   test:
-    name: PHP ${{ matrix.php }} Tests
+    name: PHP Tests (PHP ${{ matrix.php }}, WP ${{ matrix.wp }})
     runs-on: ubuntu-latest
-    
     strategy:
       fail-fast: false
       matrix:
         php: ['8.0', '8.1', '8.2', '8.3']
-    
+        wp: ['6.4', '6.5', 'latest']
+        exclude:
+          - php: '8.3'
+            wp: '6.4'
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -56,8 +38,9 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          tools: composer:v2
+          extensions: mbstring, intl, pdo_mysql
           coverage: xdebug
+          tools: composer:v2
 
       - name: Get Composer cache directory
         id: composer-cache
@@ -67,19 +50,21 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-php${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-php${{ matrix.php }}-composer-
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
-      - name: Run PHPUnit
-        run: composer test
+      - name: Run PHPUnit tests
+        run: composer run test
 
+  # PHP Compatibility Check
   compatibility:
     name: PHP Compatibility
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -89,7 +74,6 @@ jobs:
         with:
           php-version: '8.2'
           tools: composer:v2
-          coverage: none
 
       - name: Get Composer cache directory
         id: composer-cache
@@ -99,20 +83,21 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
       - name: Check PHP 8.0+ compatibility
-        run: composer compat
+        run: composer run compat
 
-  build:
-    name: Build Plugin
+  # WordPress Coding Standards
+  wpcs:
+    name: WordPress Coding Standards
     runs-on: ubuntu-latest
-    needs: [lint, test]
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -121,29 +106,61 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          tools: composer:v2
-          coverage: none
+          tools: composer:v2, cs2pr
 
-      - name: Install production dependencies
-        run: composer install --prefer-dist --no-dev --optimize-autoloader
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
-      - name: Create build artifact
-        run: |
-          mkdir -p build
-          rsync -av --exclude='.git' \
-                    --exclude='.github' \
-                    --exclude='tests' \
-                    --exclude='phpunit.xml' \
-                    --exclude='phpcs.xml' \
-                    --exclude='.gitignore' \
-                    --exclude='composer.lock' \
-                    --exclude='build' \
-                    ./ build/ai-author-for-websites/
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
         with:
-          name: ai-author-for-websites
-          path: build/
-          retention-days: 7
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
 
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Run PHPCS
+        run: ./vendor/bin/phpcs --standard=phpcs.xml --report=full --report-checkstyle=./phpcs-report.xml || true
+
+      - name: Show PHPCS results in PR
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        run: cs2pr ./phpcs-report.xml
+
+      - name: Check for PHPCS errors
+        run: ./vendor/bin/phpcs --standard=phpcs.xml
+
+  # Changelog Verification
+  changelog:
+    name: Changelog Updated
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if CHANGELOG.md was updated
+        run: |
+          # Get the list of changed files in the PR
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+          
+          # Check if CHANGELOG.md is in the list
+          if echo "$CHANGED_FILES" | grep -q "^CHANGELOG.md$"; then
+            echo "✅ CHANGELOG.md has been updated"
+            exit 0
+          else
+            echo "❌ Error: CHANGELOG.md has not been updated"
+            echo ""
+            echo "Please update CHANGELOG.md with your changes under the [Unreleased] section."
+            echo "See CONTRIBUTING.md for guidelines on changelog entries."
+            exit 1
+          fi
