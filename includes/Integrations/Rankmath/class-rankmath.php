@@ -106,6 +106,47 @@ class Rankmath extends IntegrationBase {
 
 	/**
 	 * {@inheritdoc}
+	 *
+	 * Override to check if Rank Math is active.
+	 * Integration cannot be enabled if Rank Math is not installed.
+	 */
+	public function is_enabled(): bool {
+		// If Rank Math is not active, integration cannot be enabled.
+		if ( ! $this->is_rankmath_active() ) {
+			return false;
+		}
+		return parent::is_enabled();
+	}
+
+	/**
+	 * {@inheritdoc}
+	 *
+	 * Override to prevent enabling if Rank Math is not active.
+	 */
+	public function enable(): bool {
+		if ( ! $this->is_rankmath_active() ) {
+			return false;
+		}
+		return parent::enable();
+	}
+
+	/**
+	 * Get integration data as array.
+	 *
+	 * Override to include plugin availability status.
+	 *
+	 * @return array Integration data.
+	 */
+	public function to_array(): array {
+		$data                      = parent::to_array();
+		$data['plugin_active']     = $this->is_rankmath_active();
+		$data['plugin_required']   = 'Rank Math SEO';
+		$data['availability_note'] = $this->is_rankmath_active() ? '' : __( 'Rank Math SEO plugin is required for this integration.', 'ai-author-for-websites' );
+		return $data;
+	}
+
+	/**
+	 * {@inheritdoc}
 	 */
 	public function init(): void {
 		// Register REST API endpoints.

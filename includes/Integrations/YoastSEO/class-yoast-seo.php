@@ -106,6 +106,47 @@ class YoastSEO extends IntegrationBase {
 
 	/**
 	 * {@inheritdoc}
+	 *
+	 * Override to check if Yoast SEO is active.
+	 * Integration cannot be enabled if Yoast SEO is not installed.
+	 */
+	public function is_enabled(): bool {
+		// If Yoast SEO is not active, integration cannot be enabled.
+		if ( ! $this->is_yoast_active() ) {
+			return false;
+		}
+		return parent::is_enabled();
+	}
+
+	/**
+	 * {@inheritdoc}
+	 *
+	 * Override to prevent enabling if Yoast SEO is not active.
+	 */
+	public function enable(): bool {
+		if ( ! $this->is_yoast_active() ) {
+			return false;
+		}
+		return parent::enable();
+	}
+
+	/**
+	 * Get integration data as array.
+	 *
+	 * Override to include plugin availability status.
+	 *
+	 * @return array Integration data.
+	 */
+	public function to_array(): array {
+		$data                      = parent::to_array();
+		$data['plugin_active']     = $this->is_yoast_active();
+		$data['plugin_required']   = 'Yoast SEO';
+		$data['availability_note'] = $this->is_yoast_active() ? '' : __( 'Yoast SEO plugin is required for this integration.', 'ai-author-for-websites' );
+		return $data;
+	}
+
+	/**
+	 * {@inheritdoc}
 	 */
 	public function init(): void {
 		// Register REST API endpoints.
