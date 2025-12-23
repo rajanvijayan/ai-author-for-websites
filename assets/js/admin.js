@@ -337,6 +337,40 @@
         showToast('error', 'Generation Failed', message);
     }
 
+    /**
+     * Reset the generate form to initial state
+     */
+    function resetGenerateForm() {
+        // Clear topic input
+        $('#post-topic').val('');
+        
+        // Reset word count to default
+        $('#post-word-count').val(1000);
+        
+        // Reset tone to first option
+        $('#post-tone').val('professional');
+        
+        // Clear generated content
+        $('#result-title').val('');
+        $('#result-content').empty();
+        
+        // Clear categories
+        $('#category-selector input[type="checkbox"]').prop('checked', false);
+        $('.aiauthor-new-category').remove();
+        $('#new-category-input').val('');
+        
+        // Clear tags
+        postTags = [];
+        updateTagsDisplay();
+        $('#new-tag-input').val('');
+        
+        // Show empty state, hide result
+        $('#generate-result').hide();
+        $('#generate-empty').show();
+        $('#generate-error').hide();
+        $('#generate-loading').hide();
+    }
+
     /* ==========================================================================
        Publish Dropdown
        ========================================================================== */
@@ -439,15 +473,18 @@
             success: function(response) {
                 if (response.success) {
                     var toastTitle, toastMessage;
+                    var shouldReset = false;
                     
                     switch(status) {
                         case 'publish':
                             toastTitle = 'Post Published!';
                             toastMessage = 'Your post has been published successfully.';
+                            shouldReset = true;
                             break;
                         case 'future':
                             toastTitle = 'Post Scheduled!';
                             toastMessage = 'Your post has been scheduled for publication.';
+                            shouldReset = true;
                             break;
                         default:
                             toastTitle = 'Draft Saved!';
@@ -473,9 +510,20 @@
                                         window.open(response.view_url, '_blank');
                                     }
                                 }
+                            },
+                            {
+                                text: 'Create New',
+                                callback: function() {
+                                    resetGenerateForm();
+                                }
                             }
                         ]
                     });
+
+                    // Reset form after publish or schedule to prevent duplicates
+                    if (shouldReset) {
+                        resetGenerateForm();
+                    }
                 } else {
                     showToast('error', 'Save Failed', response.message);
                 }

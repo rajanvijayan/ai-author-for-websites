@@ -203,13 +203,36 @@ $categories = get_categories( [ 'hide_empty' => false ] );
 				</div>
 
 				<div class="aiauthor-result-actions">
-					<button type="button" id="save-draft-btn" class="button button-primary aiauthor-btn-with-icon">
+					<!-- Publish Dropdown -->
+					<div class="aiauthor-publish-dropdown">
+						<button type="button" id="publish-dropdown-btn" class="button button-primary aiauthor-btn-with-icon">
+							<span class="dashicons dashicons-upload"></span>
+							<span class="btn-text"><?php esc_html_e( 'Publish', 'ai-author-for-websites' ); ?></span>
+							<span class="dashicons dashicons-arrow-up-alt2" style="margin-left: 4px;"></span>
+						</button>
+						<div class="aiauthor-publish-menu">
+							<button type="button" id="menu-publish-now" class="aiauthor-publish-menu-item">
+								<span class="dashicons dashicons-yes-alt"></span>
+								<span><?php esc_html_e( 'Publish Now', 'ai-author-for-websites' ); ?></span>
+							</button>
+							<button type="button" id="menu-schedule" class="aiauthor-publish-menu-item">
+								<span class="dashicons dashicons-calendar-alt"></span>
+								<span><?php esc_html_e( 'Schedule for Later', 'ai-author-for-websites' ); ?></span>
+							</button>
+							<div class="aiauthor-publish-menu-divider"></div>
+							<button type="button" id="menu-save-draft" class="aiauthor-publish-menu-item">
+								<span class="dashicons dashicons-media-document"></span>
+								<span><?php esc_html_e( 'Save as Draft', 'ai-author-for-websites' ); ?></span>
+							</button>
+						</div>
+					</div>
+					<button type="button" id="save-draft-btn" class="button aiauthor-btn-with-icon">
 						<span class="dashicons dashicons-media-document"></span>
-						<span class="btn-text"><?php esc_html_e( 'Save as Draft', 'ai-author-for-websites' ); ?></span>
+						<span class="btn-text"><?php esc_html_e( 'Save Draft', 'ai-author-for-websites' ); ?></span>
 					</button>
 					<button type="button" id="copy-content-btn" class="button aiauthor-btn-with-icon">
 						<span class="dashicons dashicons-clipboard"></span>
-						<span class="btn-text"><?php esc_html_e( 'Copy Content', 'ai-author-for-websites' ); ?></span>
+						<span class="btn-text"><?php esc_html_e( 'Copy', 'ai-author-for-websites' ); ?></span>
 					</button>
 					<button type="button" id="regenerate-btn" class="button aiauthor-btn-with-icon">
 						<span class="dashicons dashicons-update"></span>
