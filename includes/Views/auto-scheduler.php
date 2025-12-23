@@ -18,16 +18,17 @@ $has_api_key          = ! empty( $plugin_settings['api_key'] );
 // Handle form submission.
 if ( isset( $_POST['aiauthor_scheduler_save'] ) && check_admin_referer( 'aiauthor_scheduler_nonce' ) ) {
 	$new_settings = [
-		'enabled'              => ! empty( $_POST['enabled'] ),
-		'frequency'            => sanitize_key( $_POST['frequency'] ?? 'weekly' ),
-		'scheduled_day'        => sanitize_key( $_POST['scheduled_day'] ?? 'monday' ),
-		'scheduled_time'       => sanitize_text_field( $_POST['scheduled_time'] ?? '09:00' ),
-		'post_status'          => sanitize_key( $_POST['post_status'] ?? 'publish' ),
-		'auto_generate_topics' => ! empty( $_POST['auto_generate_topics'] ),
-		'word_count'           => absint( $_POST['word_count'] ?? 1000 ),
-		'tone'                 => sanitize_text_field( $_POST['tone'] ?? 'professional' ),
-		'default_author'       => absint( $_POST['default_author'] ?? 0 ),
-		'default_category'     => absint( $_POST['default_category'] ?? 0 ),
+		'enabled'               => ! empty( $_POST['enabled'] ),
+		'frequency'             => sanitize_key( $_POST['frequency'] ?? 'weekly' ),
+		'scheduled_day'         => sanitize_key( $_POST['scheduled_day'] ?? 'monday' ),
+		'scheduled_time'        => sanitize_text_field( $_POST['scheduled_time'] ?? '09:00' ),
+		'post_status'           => sanitize_key( $_POST['post_status'] ?? 'publish' ),
+		'auto_generate_topics'  => ! empty( $_POST['auto_generate_topics'] ),
+		'word_count'            => absint( $_POST['word_count'] ?? 1000 ),
+		'tone'                  => sanitize_text_field( $_POST['tone'] ?? 'professional' ),
+		'default_author'        => absint( $_POST['default_author'] ?? 0 ),
+		'default_category'      => absint( $_POST['default_category'] ?? 0 ),
+		'ai_generate_category'  => ! empty( $_POST['ai_generate_category'] ),
 	];
 
 	// Handle topics.
@@ -350,6 +351,24 @@ $next_run = wp_next_scheduled( 'aiauthor_auto_scheduler_generate' );
 										</option>
 									<?php endforeach; ?>
 								</select>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								<label for="ai_generate_category"><?php esc_html_e( 'AI Category Generation', 'ai-author-for-websites' ); ?></label>
+							</th>
+							<td>
+								<label class="aiauthor-switch">
+									<input type="checkbox" 
+											id="ai_generate_category" 
+											name="ai_generate_category" 
+											value="1" 
+											<?php checked( ! empty( $settings['ai_generate_category'] ) ); ?>>
+									<span class="slider"></span>
+								</label>
+								<p class="description">
+									<?php esc_html_e( 'When enabled, AI will automatically generate or select an appropriate category based on the post content. This only applies when no default category is set.', 'ai-author-for-websites' ); ?>
+								</p>
 							</td>
 						</tr>
 					</table>

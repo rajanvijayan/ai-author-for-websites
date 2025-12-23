@@ -38,20 +38,21 @@ class AutoScheduler extends IntegrationBase {
 	 * @var array
 	 */
 	protected $default_settings = [
-		'enabled'              => false,
-		'frequency'            => 'weekly',
-		'scheduled_day'        => 'monday',
-		'scheduled_time'       => '09:00',
-		'post_status'          => 'publish',
-		'topics'               => [],
-		'auto_generate_topics' => true,
-		'word_count'           => 1000,
-		'tone'                 => 'professional',
-		'default_author'       => 0,
-		'default_category'     => 0,
-		'last_run'             => '',
-		'next_run'             => '',
-		'posts_generated'      => 0,
+		'enabled'               => false,
+		'frequency'             => 'weekly',
+		'scheduled_day'         => 'monday',
+		'scheduled_time'        => '09:00',
+		'post_status'           => 'publish',
+		'topics'                => [],
+		'auto_generate_topics'  => true,
+		'word_count'            => 1000,
+		'tone'                  => 'professional',
+		'default_author'        => 0,
+		'default_category'      => 0,
+		'ai_generate_category'  => false,
+		'last_run'              => '',
+		'next_run'              => '',
+		'posts_generated'       => 0,
 	];
 
 	/**
@@ -507,6 +508,14 @@ class AutoScheduler extends IntegrationBase {
 				];
 			}
 
+			// Generate AI category if enabled and no default category is set.
+			if ( ! empty( $settings['ai_generate_category'] ) && empty( $category ) ) {
+				$ai_category = $this->generate_category_for_post( $post_data['post_title'], $post_data['post_content'], $ai );
+				if ( $ai_category ) {
+					wp_set_post_categories( $post_id, [ $ai_category ] );
+				}
+			}
+
 			// Add meta to track auto-generated posts.
 			update_post_meta( $post_id, '_aiauthor_auto_generated', true );
 			update_post_meta( $post_id, '_aiauthor_generation_date', current_time( 'mysql' ) );
@@ -522,6 +531,64 @@ class AutoScheduler extends IntegrationBase {
 				'success' => false,
 				'message' => $e->getMessage(),
 			];
+		}
+	}
+
+	/**
+	 * Generate a category for a post using AI.
+	 *
+	 * @param string    $title   Post title.
+	 * @param string    $content Post content.
+	 * @param AIEngine  $ai      AI engine instance.
+	 * @return int|null Category ID or null.
+	 */
+	private function generate_category_for_post( string $title, string $content, AIEngine $ai ): ?int {
+		try {
+			// Get existing categories.
+			$existing_categories = get_categories( [ 'hide_empty' => false ] );
+			$cat_names           = array_map( fn( $c ) => $c->name, $existing_categories );
+
+			$prompt  = "Based on the following blog post, suggest the most appropriate category.\n\n";
+			$prompt .= "Title: {$title}\n\n";
+			$prompt .= "Content (excerpt): " . wp_trim_words( wp_strip_all_tags( $content ), 150 ) . "\n\n";
+
+			if ( ! empty( $cat_names ) ) {
+				$prompt .= "Existing categories in the site: " . implode( ', ', $cat_names ) . "\n\n";
+				$prompt .= "IMPORTANT: If an existing category fits well, use that exact name. ";
+				$prompt .= "Only suggest a new category if none of the existing ones are appropriate.\n\n";
+			}
+
+			$prompt .= "Return ONLY the category name, nothing else. No quotes, no explanation.";
+
+			$response = $ai->generateContent( $prompt );
+
+			if ( is_array( $response ) && isset( $response['error'] ) ) {
+				return null;
+			}
+
+			$category_name = trim( $response );
+			$category_name = trim( $category_name, '"\'.' );
+
+			if ( empty( $category_name ) ) {
+				return null;
+			}
+
+			// Check if category exists.
+			$existing = get_term_by( 'name', $category_name, 'category' );
+			if ( $existing ) {
+				return $existing->term_id;
+			}
+
+			// Create new category.
+			$term = wp_insert_term( $category_name, 'category' );
+			if ( ! is_wp_error( $term ) ) {
+				return $term['term_id'];
+			}
+
+			return null;
+		} catch ( \Exception $e ) {
+			$this->log_error( 'Failed to generate category: ' . $e->getMessage() );
+			return null;
 		}
 	}
 
@@ -546,7 +613,13 @@ class AutoScheduler extends IntegrationBase {
 			$body_content = trim( preg_replace( '/^#\s+.+?(?:\n|$)/m', '', $content, 1 ) );
 		}
 
-		$title        = preg_replace( '/^(?:\*\*)?TITLE:?\*?\*?\s*/i', '', $title );
+		// Clean up any TITLE: prefix variations from the title.
+		$title = preg_replace( '/^(?:\*\*)?TITLE:?\*?\*?\s*/i', '', $title );
+		$title = preg_replace( '/^Title:\s*/i', '', $title );
+		$title = trim( $title, '"\'*# ' );
+
+		// Also clean up any remaining TITLE: lines from body content.
+		$body_content = preg_replace( '/^(?:\*\*)?TITLE:?\*?\*?\s*.+?(?:\n)/im', '', $body_content );
 		$body_content = $this->markdown_to_html( $body_content );
 
 		return [
