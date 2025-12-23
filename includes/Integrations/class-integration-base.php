@@ -133,17 +133,17 @@ abstract class IntegrationBase implements IntegrationInterface {
 	 */
 	public function to_array(): array {
 		return array(
-			'id'               => $this->get_id(),
-			'name'             => $this->get_name(),
-			'description'      => $this->get_description(),
-			'version'          => $this->get_version(),
-			'author'           => $this->get_author(),
-			'icon'             => $this->get_icon(),
-			'category'         => $this->get_category(),
-			'enabled'          => $this->is_enabled(),
-			'builtin'          => $this->is_builtin(),
-			'has_settings'     => $this->has_settings_page(),
-			'settings_url'     => $this->has_settings_page() ? admin_url( 'admin.php?page=ai-author-integrations&integration=' . $this->get_id() ) : '',
+			'id'           => $this->get_id(),
+			'name'         => $this->get_name(),
+			'description'  => $this->get_description(),
+			'version'      => $this->get_version(),
+			'author'       => $this->get_author(),
+			'icon'         => $this->get_icon(),
+			'category'     => $this->get_category(),
+			'enabled'      => $this->is_enabled(),
+			'builtin'      => $this->is_builtin(),
+			'has_settings' => $this->has_settings_page(),
+			'settings_url' => $this->has_settings_page() ? admin_url( 'admin.php?page=ai-author-integrations&integration=' . $this->get_id() ) : '',
 		);
 	}
 }

@@ -205,7 +205,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 										add_query_arg(
 											array(
 												'action' => 'delete',
-												'index' => $index,
+												'index'  => $index,
 											)
 										),
 										'aiauthor_delete_' . $index

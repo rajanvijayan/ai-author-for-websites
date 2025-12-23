@@ -135,20 +135,20 @@ class Updater {
 			version_compare( $this->version, $remote->version, '<' )
 		) {
 			$transient->response[ $this->basename ] = (object) array(
-				'slug'        => $this->slug,
-				'plugin'      => $this->basename,
-				'new_version' => $remote->version,
-				'url'         => $remote->homepage ?? "https://github.com/{$this->github_owner}/{$this->github_repo}",
-				'package'     => $remote->download_url ?? '',
-				'icons'       => array(
+				'slug'         => $this->slug,
+				'plugin'       => $this->basename,
+				'new_version'  => $remote->version,
+				'url'          => $remote->homepage ?? "https://github.com/{$this->github_owner}/{$this->github_repo}",
+				'package'      => $remote->download_url ?? '',
+				'icons'        => array(
 					'default' => AIAUTHOR_PLUGIN_URL . 'assets/images/icon-128x128.png',
 				),
-				'banners'     => array(
+				'banners'      => array(
 					'low'  => AIAUTHOR_PLUGIN_URL . 'assets/images/banner-772x250.png',
 					'high' => AIAUTHOR_PLUGIN_URL . 'assets/images/banner-1544x500.png',
 				),
-				'tested'      => $remote->tested ?? '',
-				'requires'    => $remote->requires ?? '5.8',
+				'tested'       => $remote->tested ?? '',
+				'requires'     => $remote->requires ?? '5.8',
 				'requires_php' => $remote->requires_php ?? '8.0',
 			);
 		}

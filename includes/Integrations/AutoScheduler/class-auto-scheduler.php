@@ -38,21 +38,21 @@ class AutoScheduler extends IntegrationBase {
 	 * @var array
 	 */
 	protected $default_settings = array(
-		'enabled'               => false,
-		'frequency'             => 'weekly',
-		'scheduled_day'         => 'monday',
-		'scheduled_time'        => '09:00',
-		'post_status'           => 'publish',
-		'topics'                => array(),
-		'auto_generate_topics'  => true,
-		'word_count'            => 1000,
-		'tone'                  => 'professional',
-		'default_author'        => 0,
-		'default_category'      => 0,
-		'ai_generate_category'  => false,
-		'last_run'              => '',
-		'next_run'              => '',
-		'posts_generated'       => 0,
+		'enabled'              => false,
+		'frequency'            => 'weekly',
+		'scheduled_day'        => 'monday',
+		'scheduled_time'       => '09:00',
+		'post_status'          => 'publish',
+		'topics'               => array(),
+		'auto_generate_topics' => true,
+		'word_count'           => 1000,
+		'tone'                 => 'professional',
+		'default_author'       => 0,
+		'default_category'     => 0,
+		'ai_generate_category' => false,
+		'last_run'             => '',
+		'next_run'             => '',
+		'posts_generated'      => 0,
 	);
 
 	/**
@@ -178,12 +178,12 @@ class AutoScheduler extends IntegrationBase {
 	 */
 	private function get_cron_schedule( string $frequency ): string {
 		$map = array(
-			'daily'       => 'daily',
-			'twice_daily' => 'aiauthor_twice_daily',
+			'daily'        => 'daily',
+			'twice_daily'  => 'aiauthor_twice_daily',
 			'every_3_days' => 'aiauthor_every_three_days',
-			'weekly'      => 'weekly',
-			'biweekly'    => 'aiauthor_biweekly',
-			'monthly'     => 'aiauthor_monthly',
+			'weekly'       => 'weekly',
+			'biweekly'     => 'aiauthor_biweekly',
+			'monthly'      => 'aiauthor_monthly',
 		);
 
 		return $map[ $frequency ] ?? 'weekly';
@@ -315,8 +315,8 @@ class AutoScheduler extends IntegrationBase {
 
 		if ( $result['success'] ) {
 			// Update statistics.
-			$settings['last_run']         = current_time( 'mysql' );
-			$settings['posts_generated']  = ( $settings['posts_generated'] ?? 0 ) + 1;
+			$settings['last_run']        = current_time( 'mysql' );
+			$settings['posts_generated'] = ( $settings['posts_generated'] ?? 0 ) + 1;
 			$this->update_settings( $settings );
 
 			$this->log_success( sprintf( 'Successfully generated post: %s', $result['title'] ) );
@@ -339,7 +339,7 @@ class AutoScheduler extends IntegrationBase {
 
 		// If we have predefined topics, use the next one.
 		if ( ! empty( $topics ) ) {
-			$topic = array_shift( $topics );
+			$topic              = array_shift( $topics );
 			$settings['topics'] = $topics;
 			$this->update_settings( $settings );
 			return $topic;
@@ -386,7 +386,7 @@ class AutoScheduler extends IntegrationBase {
 			}
 
 			// Get recent posts to avoid duplicates.
-			$recent_posts = get_posts(
+			$recent_posts  = get_posts(
 				array(
 					'numberposts' => 10,
 					'post_status' => array( 'publish', 'draft', 'future' ),
@@ -483,7 +483,7 @@ class AutoScheduler extends IntegrationBase {
 			if ( ! $author_id ) {
 				$admins    = get_users(
 					array(
-						'role' => 'administrator',
+						'role'   => 'administrator',
 						'number' => 1,
 					)
 				);
@@ -611,7 +611,7 @@ class AutoScheduler extends IntegrationBase {
 			$title        = trim( $matches[1] );
 			$body_content = trim( preg_replace( '/^(?:\*\*)?TITLE:?\*?\*?\s*.+?(?:\n|$)/im', '', $content ) );
 		} elseif ( preg_match( '/<h1[^>]*>(.+?)<\/h1>/i', $content, $matches ) ) {
-			$title        = strip_tags( $matches[1] );
+			$title        = wp_strip_all_tags( $matches[1] );
 			$body_content = preg_replace( '/<h1[^>]*>.+?<\/h1>/i', '', $content, 1 );
 		} elseif ( preg_match( '/^#\s+(.+?)(?:\n|$)/m', $content, $matches ) ) {
 			$title        = trim( $matches[1] );
@@ -768,7 +768,7 @@ class AutoScheduler extends IntegrationBase {
 			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'ai-author-for-websites' ) ) );
 		}
 
-		$count = min( absint( $_POST['count'] ?? 5 ), 20 );
+		$count           = min( absint( $_POST['count'] ?? 5 ), 20 );
 		$plugin_settings = Plugin::get_settings();
 
 		try {

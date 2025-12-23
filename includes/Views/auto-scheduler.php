@@ -19,22 +19,22 @@ $has_api_key          = ! empty( $plugin_settings['api_key'] );
 // phpcs:disable WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- All inputs are sanitized appropriately.
 if ( isset( $_POST['aiauthor_scheduler_save'] ) && check_admin_referer( 'aiauthor_scheduler_nonce' ) ) {
 	$aiauthor_new_settings = array(
-		'enabled'               => ! empty( $_POST['enabled'] ),
-		'frequency'             => sanitize_key( isset( $_POST['frequency'] ) ? $_POST['frequency'] : 'weekly' ),
-		'scheduled_day'         => sanitize_key( isset( $_POST['scheduled_day'] ) ? $_POST['scheduled_day'] : 'monday' ),
-		'scheduled_time'        => sanitize_text_field( isset( $_POST['scheduled_time'] ) ? wp_unslash( $_POST['scheduled_time'] ) : '09:00' ),
-		'post_status'           => sanitize_key( isset( $_POST['post_status'] ) ? $_POST['post_status'] : 'publish' ),
-		'auto_generate_topics'  => ! empty( $_POST['auto_generate_topics'] ),
-		'word_count'            => absint( isset( $_POST['word_count'] ) ? $_POST['word_count'] : 1000 ),
-		'tone'                  => sanitize_text_field( isset( $_POST['tone'] ) ? wp_unslash( $_POST['tone'] ) : 'professional' ),
-		'default_author'        => absint( isset( $_POST['default_author'] ) ? $_POST['default_author'] : 0 ),
-		'default_category'      => absint( isset( $_POST['default_category'] ) ? $_POST['default_category'] : 0 ),
-		'ai_generate_category'  => ! empty( $_POST['ai_generate_category'] ),
+		'enabled'              => ! empty( $_POST['enabled'] ),
+		'frequency'            => sanitize_key( isset( $_POST['frequency'] ) ? $_POST['frequency'] : 'weekly' ),
+		'scheduled_day'        => sanitize_key( isset( $_POST['scheduled_day'] ) ? $_POST['scheduled_day'] : 'monday' ),
+		'scheduled_time'       => sanitize_text_field( isset( $_POST['scheduled_time'] ) ? wp_unslash( $_POST['scheduled_time'] ) : '09:00' ),
+		'post_status'          => sanitize_key( isset( $_POST['post_status'] ) ? $_POST['post_status'] : 'publish' ),
+		'auto_generate_topics' => ! empty( $_POST['auto_generate_topics'] ),
+		'word_count'           => absint( isset( $_POST['word_count'] ) ? $_POST['word_count'] : 1000 ),
+		'tone'                 => sanitize_text_field( isset( $_POST['tone'] ) ? wp_unslash( $_POST['tone'] ) : 'professional' ),
+		'default_author'       => absint( isset( $_POST['default_author'] ) ? $_POST['default_author'] : 0 ),
+		'default_category'     => absint( isset( $_POST['default_category'] ) ? $_POST['default_category'] : 0 ),
+		'ai_generate_category' => ! empty( $_POST['ai_generate_category'] ),
 	);
 
 	// Handle topics.
-	$aiauthor_topics_raw = isset( $_POST['topics'] ) ? sanitize_textarea_field( wp_unslash( $_POST['topics'] ) ) : '';
-	$aiauthor_topics     = array_filter( array_map( 'trim', explode( "\n", $aiauthor_topics_raw ) ) );
+	$aiauthor_topics_raw             = isset( $_POST['topics'] ) ? sanitize_textarea_field( wp_unslash( $_POST['topics'] ) ) : '';
+	$aiauthor_topics                 = array_filter( array_map( 'trim', explode( "\n", $aiauthor_topics_raw ) ) );
 	$aiauthor_new_settings['topics'] = $aiauthor_topics;
 
 	$scheduler->update_settings( $aiauthor_new_settings );

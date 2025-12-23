@@ -52,7 +52,7 @@ if ( isset( $_GET['action'], $_GET['integration'], $_GET['_wpnonce'] ) ) {
 	<div class="aiauthor-integrations-grid">
 		<?php foreach ( $integrations as $integration ) : ?>
 			<?php
-			$is_enabled   = $integration->is_enabled();
+			$is_enabled    = $integration->is_enabled();
 			$toggle_action = $is_enabled ? 'disable' : 'enable';
 			$toggle_url    = wp_nonce_url(
 				add_query_arg(

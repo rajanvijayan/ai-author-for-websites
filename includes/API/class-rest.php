@@ -112,10 +112,10 @@ class REST {
 	/**
 	 * Test API connection.
 	 *
-	 * @param \WP_REST_Request $request The request object.
+	 * @param \WP_REST_Request $request The request object (unused but required by REST API).
 	 * @return \WP_REST_Response The response.
 	 */
-	public function test_connection( $request ) {
+	public function test_connection( $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
 		$settings = Plugin::get_settings();
 
 		if ( empty( $settings['api_key'] ) ) {
@@ -279,7 +279,7 @@ class REST {
 			);
 		}
 
-		$type         = sanitize_text_field( $request->get_param( 'type' ) );
+		$type          = sanitize_text_field( $request->get_param( 'type' ) );
 		$custom_prompt = sanitize_textarea_field( $request->get_param( 'custom_prompt' ) );
 
 		try {
@@ -292,7 +292,7 @@ class REST {
 				)
 			);
 
-			$prompt = $this->build_suggestion_prompt( $type, $custom_prompt );
+			$prompt   = $this->build_suggestion_prompt( $type, $custom_prompt );
 			$response = $ai->generateContent( $prompt );
 
 			if ( is_array( $response ) && isset( $response['error'] ) ) {
@@ -372,7 +372,7 @@ class REST {
 			$cat_names = array_map( fn( $c ) => $c->name, $existing_categories );
 			$tag_names = array_map( fn( $t ) => $t->name, $existing_tags );
 
-			$prompt = "Based on the following blog post, suggest appropriate categories and tags.\n\n";
+			$prompt  = "Based on the following blog post, suggest appropriate categories and tags.\n\n";
 			$prompt .= "Title: {$title}\n\n";
 			$prompt .= 'Content (excerpt): ' . wp_trim_words( wp_strip_all_tags( $content ), 200 ) . "\n\n";
 
@@ -400,7 +400,7 @@ class REST {
 			}
 
 			// Parse JSON response.
-			$json_match = preg_match( '/\{.*\}/s', $response, $matches );
+			$json_match  = preg_match( '/\{.*\}/s', $response, $matches );
 			$suggestions = $json_match ? json_decode( $matches[0], true ) : null;
 
 			if ( ! $suggestions ) {
@@ -457,7 +457,7 @@ class REST {
 
 		switch ( $type ) {
 			case 'system_instruction':
-				$prompt = "Generate a system instruction for an AI blog writer assistant.\n\n";
+				$prompt  = "Generate a system instruction for an AI blog writer assistant.\n\n";
 				$prompt .= "Website: {$site_name}\n";
 				$prompt .= "Description: {$site_desc}\n\n";
 
@@ -531,7 +531,7 @@ class REST {
 			$body_content = trim( preg_replace( '/^(?:\*\*)?TITLE:?\*?\*?\s*.+?(?:\n|$)/im', '', $content ) );
 		} elseif ( preg_match( '/<h1[^>]*>(.+?)<\/h1>/i', $content, $matches ) ) {
 			// Format: <h1>My Title</h1>.
-			$title        = strip_tags( $matches[1] );
+			$title        = wp_strip_all_tags( $matches[1] );
 			$body_content = preg_replace( '/<h1[^>]*>.+?<\/h1>/i', '', $content, 1 );
 		} elseif ( preg_match( '/^#\s+(.+?)(?:\n|$)/m', $content, $matches ) ) {
 			// Format: # My Title.
@@ -698,10 +698,10 @@ class REST {
 	/**
 	 * Get knowledge base summary.
 	 *
-	 * @param \WP_REST_Request $request The request object.
+	 * @param \WP_REST_Request $request The request object (unused but required by REST API).
 	 * @return \WP_REST_Response The response.
 	 */
-	public function get_knowledge_summary( $request ) {
+	public function get_knowledge_summary( $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
 		$knowledge_manager = new KnowledgeManager();
 		$kb                = $knowledge_manager->get_knowledge_base();
 		$summary           = $kb->getSummary();

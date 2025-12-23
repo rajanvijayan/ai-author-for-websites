@@ -204,27 +204,27 @@ class Manager {
 	 */
 	public function get_categories(): array {
 		return array(
-			'automation'  => array(
+			'automation' => array(
 				'label' => __( 'Automation', 'ai-author-for-websites' ),
 				'icon'  => 'dashicons-update-alt',
 			),
-			'publishing'  => array(
+			'publishing' => array(
 				'label' => __( 'Publishing', 'ai-author-for-websites' ),
 				'icon'  => 'dashicons-share',
 			),
-			'analytics'   => array(
+			'analytics'  => array(
 				'label' => __( 'Analytics', 'ai-author-for-websites' ),
 				'icon'  => 'dashicons-chart-area',
 			),
-			'seo'         => array(
+			'seo'        => array(
 				'label' => __( 'SEO', 'ai-author-for-websites' ),
 				'icon'  => 'dashicons-search',
 			),
-			'social'      => array(
+			'social'     => array(
 				'label' => __( 'Social Media', 'ai-author-for-websites' ),
 				'icon'  => 'dashicons-share-alt',
 			),
-			'other'       => array(
+			'other'      => array(
 				'label' => __( 'Other', 'ai-author-for-websites' ),
 				'icon'  => 'dashicons-admin-plugins',
 			),
