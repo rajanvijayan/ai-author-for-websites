@@ -682,9 +682,15 @@ class REST {
 		}
 
 		// Handle SEO data if provided.
-		$seo_data = $request->get_param( 'seo_data' );
+		$seo_data    = $request->get_param( 'seo_data' );
+		$seo_applied = false;
 		if ( ! empty( $seo_data ) && is_array( $seo_data ) ) {
-			$this->apply_seo_data( $post_id, $seo_data );
+			$seo_applied = $this->apply_seo_data( $post_id, $seo_data );
+		}
+
+		// Mark post to skip auto SEO generation if SEO was already applied.
+		if ( $seo_applied ) {
+			update_post_meta( $post_id, '_aiauthor_seo_applied', true );
 		}
 
 		// Trigger post created action for integrations (e.g., Pixabay featured image).
