@@ -30,24 +30,53 @@ class Twitter extends IntegrationBase {
 	const API_URL = 'https://api.twitter.com/2/';
 
 	/**
+	 * OAuth handler instance.
+	 *
+	 * @var OAuth|null
+	 */
+	private $oauth = null;
+
+	/**
 	 * Default settings.
 	 *
 	 * @var array
 	 */
 	protected $default_settings = array(
-		'enabled'           => false,
-		'api_key'           => '',
-		'api_secret'        => '',
-		'access_token'      => '',
-		'access_secret'     => '',
-		'bearer_token'      => '',
-		'auto_share'        => true,
-		'include_link'      => true,
-		'include_hashtags'  => true,
-		'max_hashtags'      => 3,
-		'share_on_publish'  => true,
-		'share_on_schedule' => true,
+		'enabled'              => false,
+		'client_id'            => '',
+		'client_secret'        => '',
+		'api_key'              => '',
+		'api_secret'           => '',
+		'access_token'         => '',
+		'access_secret'        => '',
+		'bearer_token'         => '',
+		'oauth2_access_token'  => '',
+		'oauth2_refresh_token' => '',
+		'oauth2_token_expires' => 0,
+		'oauth_connected'      => false,
+		'twitter_username'     => '',
+		'twitter_name'         => '',
+		'twitter_id'           => '',
+		'auto_share'           => true,
+		'include_link'         => true,
+		'include_hashtags'     => true,
+		'max_hashtags'         => 3,
+		'share_on_publish'     => true,
+		'share_on_schedule'    => true,
 	);
+
+	/**
+	 * Get the OAuth handler.
+	 *
+	 * @return OAuth
+	 */
+	public function get_oauth(): OAuth {
+		if ( null === $this->oauth ) {
+			require_once __DIR__ . '/class-oauth.php';
+			$this->oauth = new OAuth( $this );
+		}
+		return $this->oauth;
+	}
 
 	/**
 	 * {@inheritdoc}
@@ -109,6 +138,9 @@ class Twitter extends IntegrationBase {
 	 * {@inheritdoc}
 	 */
 	public function init(): void {
+		// Initialize OAuth handler.
+		$this->get_oauth()->init();
+
 		// Hook into post publish to auto-share.
 		add_action( 'publish_post', array( $this, 'maybe_share_on_publish' ), 10, 2 );
 
@@ -361,12 +393,6 @@ class Twitter extends IntegrationBase {
 	public function share_post( int $post_id, string $message = '' ): array {
 		$settings = $this->get_settings();
 
-		// Check for OAuth 1.0a credentials (needed for posting).
-		if ( empty( $settings['api_key'] ) || empty( $settings['api_secret'] ) ||
-			empty( $settings['access_token'] ) || empty( $settings['access_secret'] ) ) {
-			return array( 'error' => __( 'Twitter API credentials are required for posting.', 'ai-author-for-websites' ) );
-		}
-
 		$post = get_post( $post_id );
 
 		if ( ! $post ) {
@@ -378,8 +404,17 @@ class Twitter extends IntegrationBase {
 			$message = $this->build_tweet_text( $post, $settings );
 		}
 
-		// Make API request using OAuth 1.0a.
-		$result = $this->post_tweet( $message, $settings );
+		// Try OAuth 2.0 first if connected.
+		$oauth2_token = $this->get_oauth()->get_valid_access_token();
+		if ( $oauth2_token ) {
+			$result = $this->post_tweet_oauth2( $message, $oauth2_token );
+		} elseif ( ! empty( $settings['api_key'] ) && ! empty( $settings['api_secret'] ) &&
+					! empty( $settings['access_token'] ) && ! empty( $settings['access_secret'] ) ) {
+			// Fall back to OAuth 1.0a.
+			$result = $this->post_tweet( $message, $settings );
+		} else {
+			return array( 'error' => __( 'Twitter API credentials are required for posting. Please connect via OAuth or enter API credentials.', 'ai-author-for-websites' ) );
+		}
 
 		if ( isset( $result['error'] ) ) {
 			$this->log_share( $post_id, false, $result['error'] );
@@ -398,6 +433,47 @@ class Twitter extends IntegrationBase {
 		}
 
 		return array( 'error' => __( 'Failed to share post to Twitter.', 'ai-author-for-websites' ) );
+	}
+
+	/**
+	 * Post a tweet using OAuth 2.0.
+	 *
+	 * @param string $text         Tweet text.
+	 * @param string $access_token OAuth 2.0 access token.
+	 * @return array Result with 'id' or 'error'.
+	 */
+	private function post_tweet_oauth2( string $text, string $access_token ): array {
+		$url = self::API_URL . 'tweets';
+
+		$response = wp_remote_post(
+			$url,
+			array(
+				'timeout' => 30,
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $access_token,
+					'Content-Type'  => 'application/json',
+				),
+				'body'    => wp_json_encode( array( 'text' => $text ) ),
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return array( 'error' => $response->get_error_message() );
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		if ( isset( $data['errors'] ) ) {
+			$error_msg = isset( $data['errors'][0]['message'] ) ? $data['errors'][0]['message'] : __( 'Unknown error', 'ai-author-for-websites' );
+			return array( 'error' => $error_msg );
+		}
+
+		if ( isset( $data['data']['id'] ) ) {
+			return array( 'id' => $data['data']['id'] );
+		}
+
+		return array( 'error' => __( 'Failed to post tweet.', 'ai-author-for-websites' ) );
 	}
 
 	/**

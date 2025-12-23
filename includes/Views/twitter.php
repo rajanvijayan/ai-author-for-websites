@@ -13,17 +13,23 @@ $integrations_manager = \AIAuthor\Integrations\Manager::get_instance();
 $twitter              = $integrations_manager->get( 'twitter' );
 $settings             = $twitter->get_settings();
 $logs                 = $twitter->get_logs( 10 );
+$oauth                = $twitter->get_oauth();
+$is_connected         = $oauth->is_connected();
+$username             = $oauth->get_connected_username();
+
+// Check for OAuth messages.
+// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+$oauth_success = isset( $_GET['oauth_success'] ) ? sanitize_text_field( wp_unslash( $_GET['oauth_success'] ) ) : '';
+// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+$oauth_error = isset( $_GET['oauth_error'] ) ? sanitize_text_field( wp_unslash( $_GET['oauth_error'] ) ) : '';
 
 // Handle form submission.
 // phpcs:disable WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- All inputs are sanitized appropriately.
 if ( isset( $_POST['aiauthor_twitter_save'] ) && check_admin_referer( 'aiauthor_twitter_nonce' ) ) {
 	$aiauthor_new_settings = array(
 		'enabled'           => ! empty( $_POST['enabled'] ),
-		'api_key'           => sanitize_text_field( isset( $_POST['api_key'] ) ? wp_unslash( $_POST['api_key'] ) : '' ),
-		'api_secret'        => sanitize_text_field( isset( $_POST['api_secret'] ) ? wp_unslash( $_POST['api_secret'] ) : '' ),
-		'access_token'      => sanitize_text_field( isset( $_POST['access_token'] ) ? wp_unslash( $_POST['access_token'] ) : '' ),
-		'access_secret'     => sanitize_text_field( isset( $_POST['access_secret'] ) ? wp_unslash( $_POST['access_secret'] ) : '' ),
-		'bearer_token'      => sanitize_text_field( isset( $_POST['bearer_token'] ) ? wp_unslash( $_POST['bearer_token'] ) : '' ),
+		'client_id'         => sanitize_text_field( isset( $_POST['client_id'] ) ? wp_unslash( $_POST['client_id'] ) : '' ),
+		'client_secret'     => sanitize_text_field( isset( $_POST['client_secret'] ) ? wp_unslash( $_POST['client_secret'] ) : '' ),
 		'auto_share'        => ! empty( $_POST['auto_share'] ),
 		'include_link'      => ! empty( $_POST['include_link'] ),
 		'include_hashtags'  => ! empty( $_POST['include_hashtags'] ),
@@ -55,6 +61,18 @@ if ( isset( $_POST['aiauthor_twitter_save'] ) && check_admin_referer( 'aiauthor_
 		</div>
 	<?php endif; ?>
 
+	<?php if ( $oauth_success ) : ?>
+		<div class="notice notice-success is-dismissible">
+			<p><?php echo esc_html( $oauth_success ); ?></p>
+		</div>
+	<?php endif; ?>
+
+	<?php if ( $oauth_error ) : ?>
+		<div class="notice notice-error is-dismissible">
+			<p><?php echo esc_html( $oauth_error ); ?></p>
+		</div>
+	<?php endif; ?>
+
 	<div class="aiauthor-info-card">
 		<h3>
 			<span class="dashicons dashicons-info"></span>
@@ -62,9 +80,12 @@ if ( isset( $_POST['aiauthor_twitter_save'] ) && check_admin_referer( 'aiauthor_
 		</h3>
 		<ol>
 			<li><?php esc_html_e( 'Go to developer.twitter.com and create a new App.', 'ai-author-for-websites' ); ?></li>
-			<li><?php esc_html_e( 'Enable OAuth 1.0a with Read and Write permissions.', 'ai-author-for-websites' ); ?></li>
-			<li><?php esc_html_e( 'Generate your API Key, API Secret, Access Token, and Access Token Secret.', 'ai-author-for-websites' ); ?></li>
-			<li><?php esc_html_e( 'Generate a Bearer Token for testing the connection.', 'ai-author-for-websites' ); ?></li>
+			<li><?php esc_html_e( 'Enable OAuth 2.0 with User Authentication (Read and Write permissions).', 'ai-author-for-websites' ); ?></li>
+			<li>
+				<?php esc_html_e( 'Add this OAuth Redirect URI:', 'ai-author-for-websites' ); ?>
+				<code><?php echo esc_html( $oauth->get_callback_url() ); ?></code>
+			</li>
+			<li><?php esc_html_e( 'Enter your Client ID below, then click "Connect to Twitter".', 'ai-author-for-websites' ); ?></li>
 		</ol>
 		<p>
 			<a href="https://developer.twitter.com/en/docs/twitter-api/getting-started/getting-access-to-the-twitter-api" target="_blank" rel="noopener">
@@ -108,78 +129,73 @@ if ( isset( $_POST['aiauthor_twitter_save'] ) && check_admin_referer( 'aiauthor_
 					</table>
 				</div>
 
-				<!-- API Configuration -->
+				<!-- OAuth Connection -->
 				<div class="aiauthor-card">
 					<h2>
 						<span class="dashicons dashicons-admin-network"></span>
-						<?php esc_html_e( 'API Configuration', 'ai-author-for-websites' ); ?>
+						<?php esc_html_e( 'Connect to Twitter', 'ai-author-for-websites' ); ?>
 					</h2>
 
-					<table class="form-table">
-						<tr>
-							<th scope="row">
-								<label for="api_key"><?php esc_html_e( 'API Key (Consumer Key)', 'ai-author-for-websites' ); ?></label>
-							</th>
-							<td>
-								<input type="password" 
-										id="api_key" 
-										name="api_key" 
-										value="<?php echo esc_attr( $settings['api_key'] ); ?>"
-										class="regular-text">
-							</td>
-						</tr>
-						<tr>
-							<th scope="row">
-								<label for="api_secret"><?php esc_html_e( 'API Secret (Consumer Secret)', 'ai-author-for-websites' ); ?></label>
-							</th>
-							<td>
-								<input type="password" 
-										id="api_secret" 
-										name="api_secret" 
-										value="<?php echo esc_attr( $settings['api_secret'] ); ?>"
-										class="regular-text">
-							</td>
-						</tr>
-						<tr>
-							<th scope="row">
-								<label for="access_token"><?php esc_html_e( 'Access Token', 'ai-author-for-websites' ); ?></label>
-							</th>
-							<td>
-								<input type="password" 
-										id="access_token" 
-										name="access_token" 
-										value="<?php echo esc_attr( $settings['access_token'] ); ?>"
-										class="regular-text">
-							</td>
-						</tr>
-						<tr>
-							<th scope="row">
-								<label for="access_secret"><?php esc_html_e( 'Access Token Secret', 'ai-author-for-websites' ); ?></label>
-							</th>
-							<td>
-								<input type="password" 
-										id="access_secret" 
-										name="access_secret" 
-										value="<?php echo esc_attr( $settings['access_secret'] ); ?>"
-										class="regular-text">
-							</td>
-						</tr>
-						<tr>
-							<th scope="row">
-								<label for="bearer_token"><?php esc_html_e( 'Bearer Token', 'ai-author-for-websites' ); ?></label>
-							</th>
-							<td>
-								<input type="password" 
-										id="bearer_token" 
-										name="bearer_token" 
-										value="<?php echo esc_attr( $settings['bearer_token'] ); ?>"
-										class="regular-text">
-								<p class="description">
-									<?php esc_html_e( 'Used for testing the connection.', 'ai-author-for-websites' ); ?>
-								</p>
-							</td>
-						</tr>
-					</table>
+					<?php if ( $is_connected ) : ?>
+						<div class="aiauthor-connected-status">
+							<span class="dashicons dashicons-yes-alt" style="color: #46b450;"></span>
+							<span>
+								<?php
+								printf(
+									/* translators: %s: Twitter username */
+									esc_html__( 'Connected as: @%s', 'ai-author-for-websites' ),
+									'<strong>' . esc_html( $username ) . '</strong>'
+								);
+								?>
+							</span>
+							<button type="button" id="disconnect-btn" class="button button-link-delete">
+								<?php esc_html_e( 'Disconnect', 'ai-author-for-websites' ); ?>
+							</button>
+						</div>
+					<?php else : ?>
+						<table class="form-table">
+							<tr>
+								<th scope="row">
+									<label for="client_id"><?php esc_html_e( 'Client ID', 'ai-author-for-websites' ); ?></label>
+								</th>
+								<td>
+									<input type="text" 
+											id="client_id" 
+											name="client_id" 
+											value="<?php echo esc_attr( $settings['client_id'] ?? '' ); ?>"
+											class="regular-text">
+									<p class="description">
+										<?php esc_html_e( 'Found in your Twitter App\'s OAuth 2.0 settings.', 'ai-author-for-websites' ); ?>
+									</p>
+								</td>
+							</tr>
+							<tr>
+								<th scope="row">
+									<label for="client_secret"><?php esc_html_e( 'Client Secret', 'ai-author-for-websites' ); ?></label>
+								</th>
+								<td>
+									<input type="password" 
+											id="client_secret" 
+											name="client_secret" 
+											value="<?php echo esc_attr( $settings['client_secret'] ?? '' ); ?>"
+											class="regular-text">
+									<p class="description">
+										<?php esc_html_e( 'Required for Confidential clients. Leave empty for Public clients.', 'ai-author-for-websites' ); ?>
+									</p>
+								</td>
+							</tr>
+						</table>
+
+						<div class="aiauthor-oauth-actions">
+							<button type="submit" name="aiauthor_twitter_save" class="button" style="margin-right: 10px;">
+								<?php esc_html_e( 'Save Credentials', 'ai-author-for-websites' ); ?>
+							</button>
+							<button type="button" id="connect-btn" class="button button-primary" <?php disabled( empty( $settings['client_id'] ) ); ?>>
+								<span class="dashicons dashicons-twitter" style="margin-top: 3px;"></span>
+								<?php esc_html_e( 'Connect to Twitter', 'ai-author-for-websites' ); ?>
+							</button>
+						</div>
+					<?php endif; ?>
 				</div>
 
 				<!-- Tweet Settings -->
@@ -221,9 +237,6 @@ if ( isset( $_POST['aiauthor_twitter_save'] ) && check_admin_referer( 'aiauthor_
 											<?php checked( ! empty( $settings['share_on_publish'] ) ); ?>>
 									<span class="slider"></span>
 								</label>
-								<p class="description">
-									<?php esc_html_e( 'Tweet posts when they are published manually.', 'ai-author-for-websites' ); ?>
-								</p>
 							</td>
 						</tr>
 						<tr>
@@ -239,9 +252,6 @@ if ( isset( $_POST['aiauthor_twitter_save'] ) && check_admin_referer( 'aiauthor_
 											<?php checked( ! empty( $settings['share_on_schedule'] ) ); ?>>
 									<span class="slider"></span>
 								</label>
-								<p class="description">
-									<?php esc_html_e( 'Tweet posts when scheduled posts become published.', 'ai-author-for-websites' ); ?>
-								</p>
 							</td>
 						</tr>
 						<tr>
@@ -257,9 +267,6 @@ if ( isset( $_POST['aiauthor_twitter_save'] ) && check_admin_referer( 'aiauthor_
 											<?php checked( ! empty( $settings['include_link'] ) ); ?>>
 									<span class="slider"></span>
 								</label>
-								<p class="description">
-									<?php esc_html_e( 'Include the post URL in the tweet.', 'ai-author-for-websites' ); ?>
-								</p>
 							</td>
 						</tr>
 						<tr>
@@ -275,9 +282,6 @@ if ( isset( $_POST['aiauthor_twitter_save'] ) && check_admin_referer( 'aiauthor_
 											<?php checked( ! empty( $settings['include_hashtags'] ) ); ?>>
 									<span class="slider"></span>
 								</label>
-								<p class="description">
-									<?php esc_html_e( 'Add hashtags from post tags.', 'ai-author-for-websites' ); ?>
-								</p>
 							</td>
 						</tr>
 						<tr>
@@ -292,9 +296,6 @@ if ( isset( $_POST['aiauthor_twitter_save'] ) && check_admin_referer( 'aiauthor_
 										min="1"
 										max="10"
 										class="small-text">
-								<p class="description">
-									<?php esc_html_e( 'Maximum number of hashtags to include.', 'ai-author-for-websites' ); ?>
-								</p>
 							</td>
 						</tr>
 					</table>
@@ -310,19 +311,25 @@ if ( isset( $_POST['aiauthor_twitter_save'] ) && check_admin_referer( 'aiauthor_
 
 			<!-- Sidebar -->
 			<div class="aiauthor-settings-sidebar">
-				<!-- Test Connection -->
+				<!-- Connection Status -->
 				<div class="aiauthor-card">
 					<h2>
 						<span class="dashicons dashicons-admin-generic"></span>
-						<?php esc_html_e( 'Test Connection', 'ai-author-for-websites' ); ?>
+						<?php esc_html_e( 'Connection Status', 'ai-author-for-websites' ); ?>
 					</h2>
-					<p><?php esc_html_e( 'Test your Twitter API connection.', 'ai-author-for-websites' ); ?></p>
-					
-					<button type="button" id="test-connection-btn" class="button button-secondary" <?php disabled( empty( $settings['bearer_token'] ) ); ?>>
-						<span class="dashicons dashicons-admin-plugins"></span>
-						<?php esc_html_e( 'Test Connection', 'ai-author-for-websites' ); ?>
-					</button>
-					<div id="test-result" class="aiauthor-test-result" style="display: none;"></div>
+					<?php if ( $is_connected ) : ?>
+						<div class="aiauthor-status-ok">
+							<span class="dashicons dashicons-yes-alt"></span>
+							<?php esc_html_e( 'Connected', 'ai-author-for-websites' ); ?>
+						</div>
+						<p><strong><?php esc_html_e( 'Account:', 'ai-author-for-websites' ); ?></strong> @<?php echo esc_html( $username ); ?></p>
+					<?php else : ?>
+						<div class="aiauthor-status-warn">
+							<span class="dashicons dashicons-warning"></span>
+							<?php esc_html_e( 'Not Connected', 'ai-author-for-websites' ); ?>
+						</div>
+						<p><?php esc_html_e( 'Enter your Client ID and click Connect.', 'ai-author-for-websites' ); ?></p>
+					<?php endif; ?>
 				</div>
 
 				<!-- Tweet Preview -->
@@ -377,33 +384,58 @@ if ( isset( $_POST['aiauthor_twitter_save'] ) && check_admin_referer( 'aiauthor_
 
 <script>
 jQuery(document).ready(function($) {
-	// Test connection.
-	$('#test-connection-btn').on('click', function() {
-		var $btn = $(this);
-		var $result = $('#test-result');
+	var oauthNonce = '<?php echo esc_js( wp_create_nonce( 'aiauthor_twitter_oauth' ) ); ?>';
 
-		$btn.prop('disabled', true).find('.dashicons').removeClass('dashicons-admin-plugins').addClass('dashicons-update spin');
-		$result.hide();
+	// Connect button.
+	$('#connect-btn').on('click', function() {
+		var $btn = $(this);
+		$btn.prop('disabled', true).text('<?php echo esc_js( __( 'Connecting...', 'ai-author-for-websites' ) ); ?>');
 
 		$.ajax({
-			url: '<?php echo esc_url( rest_url( 'ai-author/v1/twitter/test' ) ); ?>',
+			url: ajaxurl,
 			type: 'POST',
-			headers: {
-				'X-WP-Nonce': '<?php echo esc_js( wp_create_nonce( 'wp_rest' ) ); ?>'
+			data: {
+				action: 'aiauthor_twitter_connect',
+				nonce: oauthNonce
 			},
 			success: function(response) {
-				$btn.prop('disabled', false).find('.dashicons').removeClass('dashicons-update spin').addClass('dashicons-admin-plugins');
-				
-				if (response.success) {
-					$result.html('<div class="notice notice-success"><p>' + response.message + '</p></div>').show();
+				if (response.success && response.data.auth_url) {
+					window.location.href = response.data.auth_url;
 				} else {
-					$result.html('<div class="notice notice-error"><p>' + response.message + '</p></div>').show();
+					alert(response.data.message || '<?php echo esc_js( __( 'Failed to start OAuth.', 'ai-author-for-websites' ) ); ?>');
+					$btn.prop('disabled', false).html('<span class="dashicons dashicons-twitter" style="margin-top: 3px;"></span> <?php echo esc_js( __( 'Connect to Twitter', 'ai-author-for-websites' ) ); ?>');
 				}
 			},
-			error: function(xhr) {
-				$btn.prop('disabled', false).find('.dashicons').removeClass('dashicons-update spin').addClass('dashicons-admin-plugins');
-				var msg = xhr.responseJSON ? xhr.responseJSON.message : '<?php echo esc_js( __( 'An error occurred.', 'ai-author-for-websites' ) ); ?>';
-				$result.html('<div class="notice notice-error"><p>' + msg + '</p></div>').show();
+			error: function() {
+				alert('<?php echo esc_js( __( 'An error occurred.', 'ai-author-for-websites' ) ); ?>');
+				$btn.prop('disabled', false).html('<span class="dashicons dashicons-twitter" style="margin-top: 3px;"></span> <?php echo esc_js( __( 'Connect to Twitter', 'ai-author-for-websites' ) ); ?>');
+			}
+		});
+	});
+
+	// Disconnect button.
+	$('#disconnect-btn').on('click', function() {
+		if (!confirm('<?php echo esc_js( __( 'Are you sure you want to disconnect from Twitter?', 'ai-author-for-websites' ) ); ?>')) {
+			return;
+		}
+
+		var $btn = $(this);
+		$btn.prop('disabled', true);
+
+		$.ajax({
+			url: ajaxurl,
+			type: 'POST',
+			data: {
+				action: 'aiauthor_twitter_disconnect',
+				nonce: oauthNonce
+			},
+			success: function(response) {
+				if (response.success) {
+					location.reload();
+				} else {
+					alert(response.data.message);
+					$btn.prop('disabled', false);
+				}
 			}
 		});
 	});
@@ -452,18 +484,44 @@ jQuery(document).ready(function($) {
 	margin: 0 0 10px 20px;
 }
 
-.aiauthor-info-card p {
-	margin: 0;
+.aiauthor-info-card code {
+	background: #fff;
+	padding: 2px 6px;
+	border-radius: 3px;
 }
 
-.aiauthor-info-card a {
-	display: inline-flex;
+.aiauthor-connected-status {
+	display: flex;
 	align-items: center;
-	gap: 4px;
+	gap: 10px;
+	padding: 16px;
+	background: #e7f7e1;
+	border: 1px solid #46b450;
+	border-radius: 8px;
 }
 
-.aiauthor-test-result {
-	margin-top: 16px;
+.aiauthor-oauth-actions {
+	margin-top: 20px;
+	padding-top: 20px;
+	border-top: 1px solid #ddd;
+}
+
+.aiauthor-status-ok {
+	color: #46b450;
+	font-weight: 600;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+
+.aiauthor-status-warn {
+	color: #dba617;
+	font-weight: 600;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 10px;
 }
 
 .aiauthor-tweet-preview {
@@ -539,18 +597,9 @@ jQuery(document).ready(function($) {
 	transform: translateX(30px);
 }
 
-.spin {
-	animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-	100% { transform: rotate(360deg); }
-}
-
 @media (max-width: 1200px) {
 	.aiauthor-settings-grid {
 		grid-template-columns: 1fr;
 	}
 }
 </style>
-

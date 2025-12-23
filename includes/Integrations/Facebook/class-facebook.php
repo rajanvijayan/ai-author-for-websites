@@ -30,6 +30,13 @@ class Facebook extends IntegrationBase {
 	const API_URL = 'https://graph.facebook.com/v18.0/';
 
 	/**
+	 * OAuth handler instance.
+	 *
+	 * @var OAuth|null
+	 */
+	private $oauth = null;
+
+	/**
 	 * Default settings.
 	 *
 	 * @var array
@@ -41,12 +48,29 @@ class Facebook extends IntegrationBase {
 		'access_token'      => '',
 		'page_id'           => '',
 		'page_access_token' => '',
+		'page_name'         => '',
+		'user_access_token' => '',
+		'oauth_connected'   => false,
+		'token_expires'     => 0,
 		'auto_share'        => true,
 		'share_as_link'     => true,
 		'include_excerpt'   => true,
 		'share_on_publish'  => true,
 		'share_on_schedule' => true,
 	);
+
+	/**
+	 * Get the OAuth handler.
+	 *
+	 * @return OAuth
+	 */
+	public function get_oauth(): OAuth {
+		if ( null === $this->oauth ) {
+			require_once __DIR__ . '/class-oauth.php';
+			$this->oauth = new OAuth( $this );
+		}
+		return $this->oauth;
+	}
 
 	/**
 	 * {@inheritdoc}
@@ -108,6 +132,9 @@ class Facebook extends IntegrationBase {
 	 * {@inheritdoc}
 	 */
 	public function init(): void {
+		// Initialize OAuth handler.
+		$this->get_oauth()->init();
+
 		// Hook into post publish to auto-share.
 		add_action( 'publish_post', array( $this, 'maybe_share_on_publish' ), 10, 2 );
 
