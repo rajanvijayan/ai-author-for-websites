@@ -32,7 +32,7 @@ abstract class IntegrationBase implements IntegrationInterface {
 	 *
 	 * @var array
 	 */
-	protected $default_settings = [];
+	protected $default_settings = array();
 
 	/**
 	 * Constructor.
@@ -83,12 +83,15 @@ abstract class IntegrationBase implements IntegrationInterface {
 	 * {@inheritdoc}
 	 */
 	public function get_settings(): array {
-		$settings = get_option( $this->option_key, [] );
+		$settings = get_option( $this->option_key, array() );
 		return array_merge( $this->default_settings, $settings );
 	}
 
 	/**
-	 * {@inheritdoc}
+	 * Update integration settings.
+	 *
+	 * @param array $settings The settings to update.
+	 * @return bool True on success, false on failure.
 	 */
 	public function update_settings( array $settings ): bool {
 		$merged = array_merge( $this->get_settings(), $settings );
@@ -129,19 +132,18 @@ abstract class IntegrationBase implements IntegrationInterface {
 	 * @return array Integration data.
 	 */
 	public function to_array(): array {
-		return [
-			'id'               => $this->get_id(),
-			'name'             => $this->get_name(),
-			'description'      => $this->get_description(),
-			'version'          => $this->get_version(),
-			'author'           => $this->get_author(),
-			'icon'             => $this->get_icon(),
-			'category'         => $this->get_category(),
-			'enabled'          => $this->is_enabled(),
-			'builtin'          => $this->is_builtin(),
-			'has_settings'     => $this->has_settings_page(),
-			'settings_url'     => $this->has_settings_page() ? admin_url( 'admin.php?page=ai-author-integrations&integration=' . $this->get_id() ) : '',
-		];
+		return array(
+			'id'           => $this->get_id(),
+			'name'         => $this->get_name(),
+			'description'  => $this->get_description(),
+			'version'      => $this->get_version(),
+			'author'       => $this->get_author(),
+			'icon'         => $this->get_icon(),
+			'category'     => $this->get_category(),
+			'enabled'      => $this->is_enabled(),
+			'builtin'      => $this->is_builtin(),
+			'has_settings' => $this->has_settings_page(),
+			'settings_url' => $this->has_settings_page() ? admin_url( 'admin.php?page=ai-author-integrations&integration=' . $this->get_id() ) : '',
+		);
 	}
 }
-

@@ -37,23 +37,23 @@ class AutoScheduler extends IntegrationBase {
 	 *
 	 * @var array
 	 */
-	protected $default_settings = [
-		'enabled'               => false,
-		'frequency'             => 'weekly',
-		'scheduled_day'         => 'monday',
-		'scheduled_time'        => '09:00',
-		'post_status'           => 'publish',
-		'topics'                => [],
-		'auto_generate_topics'  => true,
-		'word_count'            => 1000,
-		'tone'                  => 'professional',
-		'default_author'        => 0,
-		'default_category'      => 0,
-		'ai_generate_category'  => false,
-		'last_run'              => '',
-		'next_run'              => '',
-		'posts_generated'       => 0,
-	];
+	protected $default_settings = array(
+		'enabled'              => false,
+		'frequency'            => 'weekly',
+		'scheduled_day'        => 'monday',
+		'scheduled_time'       => '09:00',
+		'post_status'          => 'publish',
+		'topics'               => array(),
+		'auto_generate_topics' => true,
+		'word_count'           => 1000,
+		'tone'                 => 'professional',
+		'default_author'       => 0,
+		'default_category'     => 0,
+		'ai_generate_category' => false,
+		'last_run'             => '',
+		'next_run'             => '',
+		'posts_generated'      => 0,
+	);
 
 	/**
 	 * {@inheritdoc}
@@ -116,14 +116,14 @@ class AutoScheduler extends IntegrationBase {
 	 */
 	public function init(): void {
 		// Register cron hook.
-		add_action( self::CRON_HOOK, [ $this, 'run_scheduled_generation' ] );
+		add_action( self::CRON_HOOK, array( $this, 'run_scheduled_generation' ) );
 
 		// Register custom cron schedules.
-		add_filter( 'cron_schedules', [ $this, 'add_cron_schedules' ] );
+		add_filter( 'cron_schedules', array( $this, 'add_cron_schedules' ) );
 
 		// Register AJAX handlers.
-		add_action( 'wp_ajax_aiauthor_scheduler_test', [ $this, 'ajax_test_generation' ] );
-		add_action( 'wp_ajax_aiauthor_scheduler_generate_topics', [ $this, 'ajax_generate_topics' ] );
+		add_action( 'wp_ajax_aiauthor_scheduler_test', array( $this, 'ajax_test_generation' ) );
+		add_action( 'wp_ajax_aiauthor_scheduler_generate_topics', array( $this, 'ajax_generate_topics' ) );
 	}
 
 	/**
@@ -147,25 +147,25 @@ class AutoScheduler extends IntegrationBase {
 	 * @return array Modified schedules.
 	 */
 	public function add_cron_schedules( array $schedules ): array {
-		$schedules['aiauthor_twice_daily'] = [
+		$schedules['aiauthor_twice_daily'] = array(
 			'interval' => 12 * HOUR_IN_SECONDS,
 			'display'  => __( 'Twice Daily', 'ai-author-for-websites' ),
-		];
+		);
 
-		$schedules['aiauthor_every_three_days'] = [
+		$schedules['aiauthor_every_three_days'] = array(
 			'interval' => 3 * DAY_IN_SECONDS,
 			'display'  => __( 'Every Three Days', 'ai-author-for-websites' ),
-		];
+		);
 
-		$schedules['aiauthor_biweekly'] = [
+		$schedules['aiauthor_biweekly'] = array(
 			'interval' => 14 * DAY_IN_SECONDS,
 			'display'  => __( 'Bi-Weekly', 'ai-author-for-websites' ),
-		];
+		);
 
-		$schedules['aiauthor_monthly'] = [
+		$schedules['aiauthor_monthly'] = array(
 			'interval' => 30 * DAY_IN_SECONDS,
 			'display'  => __( 'Monthly', 'ai-author-for-websites' ),
-		];
+		);
 
 		return $schedules;
 	}
@@ -177,14 +177,14 @@ class AutoScheduler extends IntegrationBase {
 	 * @return string WordPress cron schedule key.
 	 */
 	private function get_cron_schedule( string $frequency ): string {
-		$map = [
-			'daily'       => 'daily',
-			'twice_daily' => 'aiauthor_twice_daily',
-			'every_3_days'=> 'aiauthor_every_three_days',
-			'weekly'      => 'weekly',
-			'biweekly'    => 'aiauthor_biweekly',
-			'monthly'     => 'aiauthor_monthly',
-		];
+		$map = array(
+			'daily'        => 'daily',
+			'twice_daily'  => 'aiauthor_twice_daily',
+			'every_3_days' => 'aiauthor_every_three_days',
+			'weekly'       => 'weekly',
+			'biweekly'     => 'aiauthor_biweekly',
+			'monthly'      => 'aiauthor_monthly',
+		);
 
 		return $map[ $frequency ] ?? 'weekly';
 	}
@@ -259,7 +259,7 @@ class AutoScheduler extends IntegrationBase {
 
 				// If today is the target day but time has passed, get next week.
 				$today = strtolower( $now->format( 'l' ) );
-				if ( $today === strtolower( $day ) && $now->format( 'H:i' ) >= $time ) {
+				if ( strtolower( $day ) === $today && $now->format( 'H:i' ) >= $time ) {
 					$target->modify( '+1 week' );
 				}
 
@@ -315,8 +315,8 @@ class AutoScheduler extends IntegrationBase {
 
 		if ( $result['success'] ) {
 			// Update statistics.
-			$settings['last_run']         = current_time( 'mysql' );
-			$settings['posts_generated']  = ( $settings['posts_generated'] ?? 0 ) + 1;
+			$settings['last_run']        = current_time( 'mysql' );
+			$settings['posts_generated'] = ( $settings['posts_generated'] ?? 0 ) + 1;
 			$this->update_settings( $settings );
 
 			$this->log_success( sprintf( 'Successfully generated post: %s', $result['title'] ) );
@@ -335,11 +335,11 @@ class AutoScheduler extends IntegrationBase {
 	 * @return string The topic to use.
 	 */
 	private function get_next_topic( array $settings ): string {
-		$topics = $settings['topics'] ?? [];
+		$topics = $settings['topics'] ?? array();
 
 		// If we have predefined topics, use the next one.
 		if ( ! empty( $topics ) ) {
-			$topic = array_shift( $topics );
+			$topic              = array_shift( $topics );
 			$settings['topics'] = $topics;
 			$this->update_settings( $settings );
 			return $topic;
@@ -364,11 +364,11 @@ class AutoScheduler extends IntegrationBase {
 		try {
 			$ai = new AIEngine(
 				$plugin_settings['api_key'],
-				[
+				array(
 					'provider' => $plugin_settings['provider'] ?? 'groq',
 					'model'    => $plugin_settings['model'] ?? 'llama-3.3-70b-versatile',
 					'timeout'  => 60,
-				]
+				)
 			);
 
 			$knowledge_manager = new KnowledgeManager();
@@ -386,11 +386,11 @@ class AutoScheduler extends IntegrationBase {
 			}
 
 			// Get recent posts to avoid duplicates.
-			$recent_posts = get_posts(
-				[
+			$recent_posts  = get_posts(
+				array(
 					'numberposts' => 10,
-					'post_status' => [ 'publish', 'draft', 'future' ],
-				]
+					'post_status' => array( 'publish', 'draft', 'future' ),
+				)
 			);
 			$recent_titles = array_map( fn( $p ) => $p->post_title, $recent_posts );
 
@@ -430,11 +430,11 @@ class AutoScheduler extends IntegrationBase {
 		try {
 			$ai = new AIEngine(
 				$plugin_settings['api_key'],
-				[
+				array(
 					'provider' => $plugin_settings['provider'] ?? 'groq',
 					'model'    => $plugin_settings['model'] ?? 'llama-3.3-70b-versatile',
 					'timeout'  => 120,
-				]
+				)
 			);
 
 			// Get knowledge base context.
@@ -463,16 +463,16 @@ class AutoScheduler extends IntegrationBase {
 				$prompt .= $knowledge_context . "\n\n";
 			}
 
-			$prompt .= "Now write the blog post:";
+			$prompt .= 'Now write the blog post:';
 
 			// Generate content.
 			$response = $ai->chat( $prompt );
 
 			if ( is_array( $response ) && isset( $response['error'] ) ) {
-				return [
+				return array(
 					'success' => false,
 					'message' => $response['error'],
-				];
+				);
 			}
 
 			// Parse the response.
@@ -481,38 +481,43 @@ class AutoScheduler extends IntegrationBase {
 			// Create the post.
 			$author_id = $settings['default_author'] ?? 0;
 			if ( ! $author_id ) {
-				$admins    = get_users( [ 'role' => 'administrator', 'number' => 1 ] );
+				$admins    = get_users(
+					array(
+						'role'   => 'administrator',
+						'number' => 1,
+					)
+				);
 				$author_id = ! empty( $admins ) ? $admins[0]->ID : 1;
 			}
 
-			$post_data = [
-				'post_title'   => $parsed['title'] ?: $topic,
+			$post_data = array(
+				'post_title'   => ! empty( $parsed['title'] ) ? $parsed['title'] : $topic,
 				'post_content' => $parsed['content'],
 				'post_status'  => $settings['post_status'] ?? 'publish',
 				'post_type'    => 'post',
 				'post_author'  => $author_id,
-			];
+			);
 
 			// Add category if set.
 			$category = $settings['default_category'] ?? 0;
 			if ( $category ) {
-				$post_data['post_category'] = [ $category ];
+				$post_data['post_category'] = array( $category );
 			}
 
 			$post_id = wp_insert_post( $post_data );
 
 			if ( is_wp_error( $post_id ) ) {
-				return [
+				return array(
 					'success' => false,
 					'message' => $post_id->get_error_message(),
-				];
+				);
 			}
 
 			// Generate AI category if enabled and no default category is set.
 			if ( ! empty( $settings['ai_generate_category'] ) && empty( $category ) ) {
 				$ai_category = $this->generate_category_for_post( $post_data['post_title'], $post_data['post_content'], $ai );
 				if ( $ai_category ) {
-					wp_set_post_categories( $post_id, [ $ai_category ] );
+					wp_set_post_categories( $post_id, array( $ai_category ) );
 				}
 			}
 
@@ -520,45 +525,45 @@ class AutoScheduler extends IntegrationBase {
 			update_post_meta( $post_id, '_aiauthor_auto_generated', true );
 			update_post_meta( $post_id, '_aiauthor_generation_date', current_time( 'mysql' ) );
 
-			return [
+			return array(
 				'success' => true,
 				'message' => 'Post generated successfully.',
 				'post_id' => $post_id,
 				'title'   => $post_data['post_title'],
-			];
+			);
 		} catch ( \Exception $e ) {
-			return [
+			return array(
 				'success' => false,
 				'message' => $e->getMessage(),
-			];
+			);
 		}
 	}
 
 	/**
 	 * Generate a category for a post using AI.
 	 *
-	 * @param string    $title   Post title.
-	 * @param string    $content Post content.
-	 * @param AIEngine  $ai      AI engine instance.
+	 * @param string   $title   Post title.
+	 * @param string   $content Post content.
+	 * @param AIEngine $ai      AI engine instance.
 	 * @return int|null Category ID or null.
 	 */
 	private function generate_category_for_post( string $title, string $content, AIEngine $ai ): ?int {
 		try {
 			// Get existing categories.
-			$existing_categories = get_categories( [ 'hide_empty' => false ] );
+			$existing_categories = get_categories( array( 'hide_empty' => false ) );
 			$cat_names           = array_map( fn( $c ) => $c->name, $existing_categories );
 
 			$prompt  = "Based on the following blog post, suggest the most appropriate category.\n\n";
 			$prompt .= "Title: {$title}\n\n";
-			$prompt .= "Content (excerpt): " . wp_trim_words( wp_strip_all_tags( $content ), 150 ) . "\n\n";
+			$prompt .= 'Content (excerpt): ' . wp_trim_words( wp_strip_all_tags( $content ), 150 ) . "\n\n";
 
 			if ( ! empty( $cat_names ) ) {
-				$prompt .= "Existing categories in the site: " . implode( ', ', $cat_names ) . "\n\n";
-				$prompt .= "IMPORTANT: If an existing category fits well, use that exact name. ";
+				$prompt .= 'Existing categories in the site: ' . implode( ', ', $cat_names ) . "\n\n";
+				$prompt .= 'IMPORTANT: If an existing category fits well, use that exact name. ';
 				$prompt .= "Only suggest a new category if none of the existing ones are appropriate.\n\n";
 			}
 
-			$prompt .= "Return ONLY the category name, nothing else. No quotes, no explanation.";
+			$prompt .= 'Return ONLY the category name, nothing else. No quotes, no explanation.';
 
 			$response = $ai->generateContent( $prompt );
 
@@ -606,7 +611,7 @@ class AutoScheduler extends IntegrationBase {
 			$title        = trim( $matches[1] );
 			$body_content = trim( preg_replace( '/^(?:\*\*)?TITLE:?\*?\*?\s*.+?(?:\n|$)/im', '', $content ) );
 		} elseif ( preg_match( '/<h1[^>]*>(.+?)<\/h1>/i', $content, $matches ) ) {
-			$title        = strip_tags( $matches[1] );
+			$title        = wp_strip_all_tags( $matches[1] );
 			$body_content = preg_replace( '/<h1[^>]*>.+?<\/h1>/i', '', $content, 1 );
 		} elseif ( preg_match( '/^#\s+(.+?)(?:\n|$)/m', $content, $matches ) ) {
 			$title        = trim( $matches[1] );
@@ -622,10 +627,10 @@ class AutoScheduler extends IntegrationBase {
 		$body_content = preg_replace( '/^(?:\*\*)?TITLE:?\*?\*?\s*.+?(?:\n)/im', '', $body_content );
 		$body_content = $this->markdown_to_html( $body_content );
 
-		return [
+		return array(
 			'title'   => trim( $title ),
 			'content' => trim( $body_content ),
-		];
+		);
 	}
 
 	/**
@@ -690,12 +695,12 @@ class AutoScheduler extends IntegrationBase {
 	 * @param string $message Log message.
 	 */
 	private function add_log_entry( string $type, string $message ): void {
-		$logs   = get_option( 'aiauthor_scheduler_logs', [] );
-		$logs[] = [
+		$logs   = get_option( 'aiauthor_scheduler_logs', array() );
+		$logs[] = array(
 			'type'    => $type,
 			'message' => $message,
 			'date'    => current_time( 'mysql' ),
-		];
+		);
 
 		// Keep only the last 50 entries.
 		$logs = array_slice( $logs, -50 );
@@ -710,7 +715,7 @@ class AutoScheduler extends IntegrationBase {
 	 * @return array Array of log entries.
 	 */
 	public function get_logs( int $limit = 20 ): array {
-		$logs = get_option( 'aiauthor_scheduler_logs', [] );
+		$logs = get_option( 'aiauthor_scheduler_logs', array() );
 		return array_slice( array_reverse( $logs ), 0, $limit );
 	}
 
@@ -721,7 +726,7 @@ class AutoScheduler extends IntegrationBase {
 		check_ajax_referer( 'aiauthor_scheduler_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'ai-author-for-websites' ) ] );
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'ai-author-for-websites' ) ) );
 		}
 
 		$settings = $this->get_settings();
@@ -730,7 +735,7 @@ class AutoScheduler extends IntegrationBase {
 		if ( empty( $topic ) ) {
 			$topic = $this->generate_topic_from_knowledge_base();
 			if ( empty( $topic ) ) {
-				wp_send_json_error( [ 'message' => __( 'Could not generate a topic.', 'ai-author-for-websites' ) ] );
+				wp_send_json_error( array( 'message' => __( 'Could not generate a topic.', 'ai-author-for-websites' ) ) );
 			}
 		}
 
@@ -741,15 +746,15 @@ class AutoScheduler extends IntegrationBase {
 
 		if ( $result['success'] ) {
 			wp_send_json_success(
-				[
+				array(
 					'message'  => $result['message'],
 					'post_id'  => $result['post_id'],
 					'title'    => $result['title'],
 					'edit_url' => get_edit_post_link( $result['post_id'], 'raw' ),
-				]
+				)
 			);
 		} else {
-			wp_send_json_error( [ 'message' => $result['message'] ] );
+			wp_send_json_error( array( 'message' => $result['message'] ) );
 		}
 	}
 
@@ -760,20 +765,20 @@ class AutoScheduler extends IntegrationBase {
 		check_ajax_referer( 'aiauthor_scheduler_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => __( 'Permission denied.', 'ai-author-for-websites' ) ] );
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'ai-author-for-websites' ) ) );
 		}
 
-		$count = min( absint( $_POST['count'] ?? 5 ), 20 );
+		$count           = min( absint( $_POST['count'] ?? 5 ), 20 );
 		$plugin_settings = Plugin::get_settings();
 
 		try {
 			$ai = new AIEngine(
 				$plugin_settings['api_key'],
-				[
+				array(
 					'provider' => $plugin_settings['provider'] ?? 'groq',
 					'model'    => $plugin_settings['model'] ?? 'llama-3.3-70b-versatile',
 					'timeout'  => 60,
-				]
+				)
 			);
 
 			$knowledge_manager = new KnowledgeManager();
@@ -796,20 +801,20 @@ class AutoScheduler extends IntegrationBase {
 			$response = $ai->generateContent( $prompt );
 
 			if ( is_array( $response ) && isset( $response['error'] ) ) {
-				wp_send_json_error( [ 'message' => $response['error'] ] );
+				wp_send_json_error( array( 'message' => $response['error'] ) );
 			}
 
 			// Parse JSON.
 			$json_match = preg_match( '/\[.*\]/s', $response, $matches );
-			$topics     = $json_match ? json_decode( $matches[0], true ) : [];
+			$topics     = $json_match ? json_decode( $matches[0], true ) : array();
 
 			if ( empty( $topics ) || ! is_array( $topics ) ) {
-				wp_send_json_error( [ 'message' => __( 'Could not parse topics.', 'ai-author-for-websites' ) ] );
+				wp_send_json_error( array( 'message' => __( 'Could not parse topics.', 'ai-author-for-websites' ) ) );
 			}
 
-			wp_send_json_success( [ 'topics' => $topics ] );
+			wp_send_json_success( array( 'topics' => $topics ) );
 		} catch ( \Exception $e ) {
-			wp_send_json_error( [ 'message' => $e->getMessage() ] );
+			wp_send_json_error( array( 'message' => $e->getMessage() ) );
 		}
 	}
 
@@ -819,14 +824,14 @@ class AutoScheduler extends IntegrationBase {
 	 * @return array Frequency options.
 	 */
 	public function get_frequency_options(): array {
-		return [
+		return array(
 			'daily'        => __( 'Daily', 'ai-author-for-websites' ),
 			'twice_daily'  => __( 'Twice Daily', 'ai-author-for-websites' ),
 			'every_3_days' => __( 'Every 3 Days', 'ai-author-for-websites' ),
 			'weekly'       => __( 'Weekly', 'ai-author-for-websites' ),
 			'biweekly'     => __( 'Bi-Weekly', 'ai-author-for-websites' ),
 			'monthly'      => __( 'Monthly', 'ai-author-for-websites' ),
-		];
+		);
 	}
 
 	/**
@@ -835,7 +840,7 @@ class AutoScheduler extends IntegrationBase {
 	 * @return array Day options.
 	 */
 	public function get_day_options(): array {
-		return [
+		return array(
 			'monday'    => __( 'Monday', 'ai-author-for-websites' ),
 			'tuesday'   => __( 'Tuesday', 'ai-author-for-websites' ),
 			'wednesday' => __( 'Wednesday', 'ai-author-for-websites' ),
@@ -843,7 +848,7 @@ class AutoScheduler extends IntegrationBase {
 			'friday'    => __( 'Friday', 'ai-author-for-websites' ),
 			'saturday'  => __( 'Saturday', 'ai-author-for-websites' ),
 			'sunday'    => __( 'Sunday', 'ai-author-for-websites' ),
-		];
+		);
 	}
 
 	/**
@@ -853,4 +858,3 @@ class AutoScheduler extends IntegrationBase {
 		include AIAUTHOR_PLUGIN_DIR . 'includes/Views/auto-scheduler.php';
 	}
 }
-

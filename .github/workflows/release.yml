@@ -1,0 +1,112 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install production dependencies
+        run: composer install --prefer-dist --no-dev --optimize-autoloader
+
+      - name: Get version from tag
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create plugin zip
+        run: |
+          mkdir -p dist
+          rsync -av --exclude='.git' \
+                    --exclude='.github' \
+                    --exclude='tests' \
+                    --exclude='phpunit.xml' \
+                    --exclude='phpcs.xml' \
+                    --exclude='.gitignore' \
+                    --exclude='composer.lock' \
+                    --exclude='dist' \
+                    --exclude='node_modules' \
+                    --exclude='.cursor' \
+                    --exclude='*.md' \
+                    --exclude='key.ai' \
+                    ./ dist/ai-author-for-websites/
+          
+          # Keep README.md in the release
+          cp README.md dist/ai-author-for-websites/
+          
+          cd dist
+          zip -r ai-author-for-websites-${{ steps.version.outputs.version }}.zip ai-author-for-websites/
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          git log $(git describe --tags --abbrev=0 HEAD^)..HEAD --pretty=format:"- %s" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/ai-author-for-websites-${{ steps.version.outputs.version }}.zip
+          body: |
+            ## AI Author for Websites v${{ steps.version.outputs.version }}
+            
+            ### Changes
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ### Installation
+            1. Download the zip file below
+            2. Go to WordPress Admin → Plugins → Add New → Upload Plugin
+            3. Upload the zip file and activate
+            
+            ### Requirements
+            - WordPress 5.8+
+            - PHP 8.0+
+          draft: false
+          prerelease: false
+
+      - name: Update update server info
+        run: |
+          # Create update info JSON for self-hosted updates
+          cat > dist/update-info.json << 'EOF'
+          {
+            "name": "AI Author for Websites",
+            "slug": "ai-author-for-websites",
+            "version": "${{ steps.version.outputs.version }}",
+            "download_url": "https://github.com/rajanvijayan/ai-author-for-websites/releases/download/v${{ steps.version.outputs.version }}/ai-author-for-websites-${{ steps.version.outputs.version }}.zip",
+            "requires": "5.8",
+            "tested": "6.4",
+            "requires_php": "8.0",
+            "last_updated": "${{ github.event.head_commit.timestamp }}",
+            "sections": {
+              "description": "AI-powered blog post generator. Train the AI with your knowledge base and create high-quality content.",
+              "changelog": "${{ steps.changelog.outputs.changelog }}"
+            }
+          }
+          EOF
+
+      - name: Upload update info
+        uses: actions/upload-artifact@v4
+        with:
+          name: update-info
+          path: dist/update-info.json
+          retention-days: 90
+

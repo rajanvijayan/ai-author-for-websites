@@ -32,7 +32,7 @@ class Manager {
 	 *
 	 * @var IntegrationInterface[]
 	 */
-	private $integrations = [];
+	private $integrations = array();
 
 	/**
 	 * Get single instance.
@@ -59,8 +59,8 @@ class Manager {
 	 */
 	private function init_hooks(): void {
 		// Allow external plugins to register integrations.
-		add_action( 'aiauthor_register_integrations', [ $this, 'do_register_integrations' ], 10 );
-		add_action( 'init', [ $this, 'init_enabled_integrations' ], 20 );
+		add_action( 'aiauthor_register_integrations', array( $this, 'do_register_integrations' ), 10 );
+		add_action( 'init', array( $this, 'init_enabled_integrations' ), 20 );
 	}
 
 	/**
@@ -203,32 +203,32 @@ class Manager {
 	 * @return array Array of category info.
 	 */
 	public function get_categories(): array {
-		return [
-			'automation'  => [
+		return array(
+			'automation' => array(
 				'label' => __( 'Automation', 'ai-author-for-websites' ),
 				'icon'  => 'dashicons-update-alt',
-			],
-			'publishing'  => [
+			),
+			'publishing' => array(
 				'label' => __( 'Publishing', 'ai-author-for-websites' ),
 				'icon'  => 'dashicons-share',
-			],
-			'analytics'   => [
+			),
+			'analytics'  => array(
 				'label' => __( 'Analytics', 'ai-author-for-websites' ),
 				'icon'  => 'dashicons-chart-area',
-			],
-			'seo'         => [
+			),
+			'seo'        => array(
 				'label' => __( 'SEO', 'ai-author-for-websites' ),
 				'icon'  => 'dashicons-search',
-			],
-			'social'      => [
+			),
+			'social'     => array(
 				'label' => __( 'Social Media', 'ai-author-for-websites' ),
 				'icon'  => 'dashicons-share-alt',
-			],
-			'other'       => [
+			),
+			'other'      => array(
 				'label' => __( 'Other', 'ai-author-for-websites' ),
 				'icon'  => 'dashicons-admin-plugins',
-			],
-		];
+			),
+		);
 	}
 
 	/**
@@ -237,7 +237,7 @@ class Manager {
 	 * @return array Array of integration data.
 	 */
 	public function get_all_as_array(): array {
-		$result = [];
+		$result = array();
 		foreach ( $this->integrations as $integration ) {
 			$result[] = $integration->to_array();
 		}
@@ -277,4 +277,3 @@ class Manager {
 		}
 	}
 }
-

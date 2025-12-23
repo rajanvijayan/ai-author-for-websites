@@ -56,17 +56,17 @@ class Plugin {
 	 */
 	private function init_hooks() {
 		// Activation/Deactivation hooks.
-		register_activation_hook( AIAUTHOR_PLUGIN_FILE, [ $this, 'activate' ] );
-		register_deactivation_hook( AIAUTHOR_PLUGIN_FILE, [ $this, 'deactivate' ] );
+		register_activation_hook( AIAUTHOR_PLUGIN_FILE, array( $this, 'activate' ) );
+		register_deactivation_hook( AIAUTHOR_PLUGIN_FILE, array( $this, 'deactivate' ) );
 
 		// Initialize components.
-		add_action( 'init', [ $this, 'init' ] );
-		add_action( 'admin_menu', [ $this, 'add_admin_menu' ] );
-		add_action( 'admin_enqueue_scripts', [ $this, 'admin_scripts' ] );
-		add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
+		add_action( 'init', array( $this, 'init' ) );
+		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'admin_scripts' ) );
+		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 
 		// Initialize integrations.
-		add_action( 'plugins_loaded', [ $this, 'init_integrations' ], 20 );
+		add_action( 'plugins_loaded', array( $this, 'init_integrations' ), 20 );
 	}
 
 	/**
@@ -81,14 +81,14 @@ class Plugin {
 	 */
 	public function activate() {
 		// Set default options.
-		$defaults = [
+		$defaults = array(
 			'api_key'            => '',
 			'provider'           => 'groq',
 			'model'              => 'llama-3.3-70b-versatile',
 			'system_instruction' => 'You are an expert blog writer. Create engaging, well-structured blog posts based on the knowledge base provided. Use a professional yet conversational tone. Include proper headings, paragraphs, and formatting.',
 			'default_word_count' => 1000,
 			'enabled'            => false,
-		];
+		);
 
 		if ( ! get_option( 'aiauthor_settings' ) ) {
 			add_option( 'aiauthor_settings', $defaults );
@@ -131,7 +131,7 @@ class Plugin {
 			__( 'AI Author', 'ai-author-for-websites' ),
 			'manage_options',
 			'ai-author-settings',
-			[ $this, 'render_admin_page' ],
+			array( $this, 'render_admin_page' ),
 			'dashicons-edit-page',
 			30
 		);
@@ -142,7 +142,7 @@ class Plugin {
 			__( 'Settings', 'ai-author-for-websites' ),
 			'manage_options',
 			'ai-author-settings',
-			[ $this, 'render_admin_page' ]
+			array( $this, 'render_admin_page' )
 		);
 
 		add_submenu_page(
@@ -151,7 +151,7 @@ class Plugin {
 			__( 'Knowledge Base', 'ai-author-for-websites' ),
 			'manage_options',
 			'ai-author-knowledge',
-			[ $this, 'render_knowledge_page' ]
+			array( $this, 'render_knowledge_page' )
 		);
 
 		add_submenu_page(
@@ -160,7 +160,7 @@ class Plugin {
 			__( 'Generate Post', 'ai-author-for-websites' ),
 			'manage_options',
 			'ai-author-generate',
-			[ $this, 'render_generate_page' ]
+			array( $this, 'render_generate_page' )
 		);
 
 		add_submenu_page(
@@ -169,7 +169,7 @@ class Plugin {
 			__( 'Integrations', 'ai-author-for-websites' ),
 			'manage_options',
 			'ai-author-integrations',
-			[ $this, 'render_integrations_page' ]
+			array( $this, 'render_integrations_page' )
 		);
 	}
 
@@ -225,14 +225,14 @@ class Plugin {
 		wp_enqueue_style(
 			'aiauthor-admin',
 			AIAUTHOR_PLUGIN_URL . 'assets/css/admin.css',
-			[],
+			array(),
 			self::VERSION
 		);
 
 		wp_enqueue_script(
 			'aiauthor-admin',
 			AIAUTHOR_PLUGIN_URL . 'assets/js/admin.js',
-			[ 'jquery' ],
+			array( 'jquery' ),
 			self::VERSION,
 			true
 		);
@@ -240,11 +240,11 @@ class Plugin {
 		wp_localize_script(
 			'aiauthor-admin',
 			'aiauthorAdmin',
-			[
+			array(
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'restUrl' => rest_url( 'ai-author/v1/' ),
 				'nonce'   => wp_create_nonce( 'wp_rest' ),
-			]
+			)
 		);
 	}
 
@@ -254,15 +254,15 @@ class Plugin {
 	 * @return array Plugin settings.
 	 */
 	public static function get_settings() {
-		$defaults = [
+		$defaults = array(
 			'api_key'            => '',
 			'provider'           => 'groq',
 			'model'              => 'llama-3.3-70b-versatile',
 			'system_instruction' => '',
 			'default_word_count' => 1000,
 			'enabled'            => false,
-		];
-		$settings = get_option( 'aiauthor_settings', [] );
+		);
+		$settings = get_option( 'aiauthor_settings', array() );
 		return array_merge( $defaults, $settings );
 	}
 
@@ -276,4 +276,3 @@ class Plugin {
 		return update_option( 'aiauthor_settings', $settings );
 	}
 }
-

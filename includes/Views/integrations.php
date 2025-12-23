@@ -52,14 +52,14 @@ if ( isset( $_GET['action'], $_GET['integration'], $_GET['_wpnonce'] ) ) {
 	<div class="aiauthor-integrations-grid">
 		<?php foreach ( $integrations as $integration ) : ?>
 			<?php
-			$is_enabled   = $integration->is_enabled();
+			$is_enabled    = $integration->is_enabled();
 			$toggle_action = $is_enabled ? 'disable' : 'enable';
 			$toggle_url    = wp_nonce_url(
 				add_query_arg(
-					[
+					array(
 						'action'      => $toggle_action,
 						'integration' => $integration->get_id(),
-					],
+					),
 					admin_url( 'admin.php?page=ai-author-integrations' )
 				),
 				'aiauthor_integration_toggle'
@@ -154,8 +154,8 @@ if ( isset( $_GET['action'], $_GET['integration'], $_GET['_wpnonce'] ) ) {
  */
 
 add_action( 'aiauthor_register_integrations', function( $manager ) {
-    require_once __DIR__ . '/class-my-integration.php';
-    $manager->register( new MyIntegration() );
+	require_once __DIR__ . '/class-my-integration.php';
+	$manager->register( new MyIntegration() );
 });</code></pre>
 		</div>
 		<p>

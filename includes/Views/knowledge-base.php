@@ -94,11 +94,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="aiauthor-quick-pages">
 			<?php
 			$pages = get_pages(
-				[
+				array(
 					'number'      => 10,
 					'sort_column' => 'post_modified',
 					'sort_order'  => 'DESC',
-				]
+				)
 			);
 			foreach ( $pages as $page ) :
 				?>
@@ -125,11 +125,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="aiauthor-quick-pages">
 			<?php
 			$posts = get_posts(
-				[
+				array(
 					'numberposts' => 10,
 					'orderby'     => 'date',
 					'order'       => 'DESC',
-				]
+				)
 			);
 			foreach ( $posts as $post ) :
 				?>
@@ -198,7 +198,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<td><?php echo esc_html( number_format( strlen( $doc['content'] ) ) ); ?> <?php esc_html_e( 'chars', 'ai-author-for-websites' ); ?></td>
 							<td><?php echo esc_html( gmdate( 'M j', strtotime( $doc['addedAt'] ) ) ); ?></td>
 							<td>
-								<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( [ 'action' => 'delete', 'index' => $index ] ), 'aiauthor_delete_' . $index ) ); ?>" 
+								<a href="
+								<?php
+								echo esc_url(
+									wp_nonce_url(
+										add_query_arg(
+											array(
+												'action' => 'delete',
+												'index'  => $index,
+											)
+										),
+										'aiauthor_delete_' . $index
+									)
+								);
+								?>
+											" 
 									class="button button-small button-link-delete"
 									onclick="return confirm('<?php esc_attr_e( 'Are you sure?', 'ai-author-for-websites' ); ?>');">
 									<?php esc_html_e( 'Delete', 'ai-author-for-websites' ); ?>
