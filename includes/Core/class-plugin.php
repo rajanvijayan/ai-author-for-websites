@@ -64,6 +64,16 @@ class Plugin {
 		add_action( 'admin_menu', [ $this, 'add_admin_menu' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'admin_scripts' ] );
 		add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
+
+		// Initialize integrations.
+		add_action( 'plugins_loaded', [ $this, 'init_integrations' ], 20 );
+	}
+
+	/**
+	 * Initialize integrations framework.
+	 */
+	public function init_integrations() {
+		\AIAuthor\Integrations\Manager::get_instance();
 	}
 
 	/**
@@ -152,6 +162,23 @@ class Plugin {
 			'ai-author-generate',
 			[ $this, 'render_generate_page' ]
 		);
+
+		add_submenu_page(
+			'ai-author-settings',
+			__( 'Integrations', 'ai-author-for-websites' ),
+			__( 'Integrations', 'ai-author-for-websites' ),
+			'manage_options',
+			'ai-author-integrations',
+			[ $this, 'render_integrations_page' ]
+		);
+	}
+
+	/**
+	 * Render integrations page.
+	 */
+	public function render_integrations_page() {
+		$manager = \AIAuthor\Integrations\Manager::get_instance();
+		$manager->render_admin_page();
 	}
 
 	/**
