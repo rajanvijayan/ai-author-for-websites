@@ -124,6 +124,7 @@ class AutoScheduler extends IntegrationBase {
 		// Register AJAX handlers.
 		add_action( 'wp_ajax_aiauthor_scheduler_test', array( $this, 'ajax_test_generation' ) );
 		add_action( 'wp_ajax_aiauthor_scheduler_generate_topics', array( $this, 'ajax_generate_topics' ) );
+		add_action( 'wp_ajax_aiauthor_scheduler_force_run', array( $this, 'ajax_force_run' ) );
 	}
 
 	/**
@@ -288,11 +289,13 @@ class AutoScheduler extends IntegrationBase {
 
 	/**
 	 * Run the scheduled generation.
+	 *
+	 * @param bool $is_force_run Whether this is a manual force run.
 	 */
-	public function run_scheduled_generation(): void {
+	public function run_scheduled_generation( bool $is_force_run = false ): void {
 		$settings = $this->get_settings();
 
-		if ( ! $settings['enabled'] ) {
+		if ( ! $settings['enabled'] && ! $is_force_run ) {
 			return;
 		}
 
@@ -303,8 +306,8 @@ class AutoScheduler extends IntegrationBase {
 			return;
 		}
 
-		// Get topic.
-		$topic = $this->get_next_topic( $settings );
+		// Get topic without removing it yet.
+		$topic = $this->peek_next_topic( $settings );
 		if ( empty( $topic ) ) {
 			$this->log_error( 'No topic available for generation.' );
 			return;
@@ -314,35 +317,43 @@ class AutoScheduler extends IntegrationBase {
 		$result = $this->generate_post( $topic, $settings );
 
 		if ( $result['success'] ) {
+			// Only remove the topic after successful generation.
+			$this->consume_topic( $topic );
+
+			// Refresh settings after topic consumption.
+			$settings = $this->get_settings();
+
 			// Update statistics.
 			$settings['last_run']        = current_time( 'mysql' );
 			$settings['posts_generated'] = ( $settings['posts_generated'] ?? 0 ) + 1;
 			$this->update_settings( $settings );
 
 			$this->log_success( sprintf( 'Successfully generated post: %s', $result['title'] ) );
+
+			// Check if topics are running low and auto-generate if needed.
+			$this->maybe_replenish_topics();
 		} else {
 			$this->log_error( sprintf( 'Failed to generate post: %s', $result['message'] ) );
 		}
 
-		// Reschedule next run.
-		$this->schedule_next_run();
+		// Reschedule next run (only for scheduled runs, not force runs).
+		if ( ! $is_force_run ) {
+			$this->schedule_next_run();
+		}
 	}
 
 	/**
-	 * Get the next topic for generation.
+	 * Get the next topic for generation (peeks without removing).
 	 *
 	 * @param array $settings Integration settings.
 	 * @return string The topic to use.
 	 */
-	private function get_next_topic( array $settings ): string {
+	private function peek_next_topic( array $settings ): string {
 		$topics = $settings['topics'] ?? array();
 
-		// If we have predefined topics, use the next one.
+		// If we have predefined topics, return the first one without removing.
 		if ( ! empty( $topics ) ) {
-			$topic              = array_shift( $topics );
-			$settings['topics'] = $topics;
-			$this->update_settings( $settings );
-			return $topic;
+			return reset( $topics );
 		}
 
 		// Auto-generate a topic if enabled.
@@ -351,6 +362,142 @@ class AutoScheduler extends IntegrationBase {
 		}
 
 		return '';
+	}
+
+	/**
+	 * Remove a topic from the queue after successful generation.
+	 *
+	 * @param string $topic The topic to remove.
+	 */
+	private function consume_topic( string $topic ): void {
+		$settings = $this->get_settings();
+		$topics   = $settings['topics'] ?? array();
+
+		// Find and remove the topic from the queue.
+		$index = array_search( $topic, $topics, true );
+		if ( false !== $index ) {
+			unset( $topics[ $index ] );
+			$settings['topics'] = array_values( $topics ); // Re-index array.
+			$this->update_settings( $settings );
+		}
+	}
+
+	/**
+	 * Check if topics are running low and auto-generate new ones if needed.
+	 */
+	private function maybe_replenish_topics(): void {
+		$settings = $this->get_settings();
+
+		// Only replenish if auto-generate topics is enabled.
+		if ( empty( $settings['auto_generate_topics'] ) ) {
+			return;
+		}
+
+		$topics = $settings['topics'] ?? array();
+
+		// If topics are running low (less than 2), generate new ones.
+		if ( count( $topics ) < 2 ) {
+			$new_topics = $this->generate_multiple_topics( 5 - count( $topics ) );
+
+			if ( ! empty( $new_topics ) ) {
+				// Merge new topics with existing ones.
+				$settings['topics'] = array_merge( $topics, $new_topics );
+				$this->update_settings( $settings );
+
+				$this->log_success( sprintf( 'Auto-generated %d new topics for the queue.', count( $new_topics ) ) );
+			}
+		}
+	}
+
+	/**
+	 * Generate multiple topics using AI.
+	 *
+	 * @param int $count Number of topics to generate.
+	 * @return array Array of generated topics.
+	 */
+	private function generate_multiple_topics( int $count = 5 ): array {
+		$plugin_settings = Plugin::get_settings();
+
+		if ( empty( $plugin_settings['api_key'] ) ) {
+			return array();
+		}
+
+		try {
+			$ai = new AIEngine(
+				$plugin_settings['api_key'],
+				array(
+					'provider' => $plugin_settings['provider'] ?? 'groq',
+					'model'    => $plugin_settings['model'] ?? 'llama-3.3-70b-versatile',
+					'timeout'  => 60,
+				)
+			);
+
+			$knowledge_manager = new KnowledgeManager();
+			$context           = $knowledge_manager->get_knowledge_context();
+
+			$site_name = get_bloginfo( 'name' );
+			$site_desc = get_bloginfo( 'description' );
+
+			$prompt  = "Based on the following website context, suggest {$count} unique blog post topics.\n\n";
+			$prompt .= "Website: {$site_name}\n";
+			$prompt .= "Description: {$site_desc}\n\n";
+
+			if ( ! empty( $context ) ) {
+				$prompt .= "Knowledge Base (excerpt):\n" . wp_trim_words( $context, 300 ) . "\n\n";
+			}
+
+			// Get recent posts and existing topics to avoid duplicates.
+			$recent_posts  = get_posts(
+				array(
+					'numberposts' => 15,
+					'post_status' => array( 'publish', 'draft', 'future' ),
+				)
+			);
+			$recent_titles = array_map( fn( $p ) => $p->post_title, $recent_posts );
+
+			// Also get existing topics in the queue.
+			$settings        = $this->get_settings();
+			$existing_topics = $settings['topics'] ?? array();
+
+			$avoid_topics = array_merge( $recent_titles, $existing_topics );
+
+			if ( ! empty( $avoid_topics ) ) {
+				$prompt .= "AVOID these topics (already used or in queue):\n- " . implode( "\n- ", $avoid_topics ) . "\n\n";
+			}
+
+			$prompt .= "Return ONLY a JSON array of topic strings, no explanations. Example:\n";
+			$prompt .= '["Topic 1", "Topic 2", "Topic 3"]';
+
+			$response = $ai->generateContent( $prompt );
+
+			if ( is_array( $response ) && isset( $response['error'] ) ) {
+				return array();
+			}
+
+			// Parse JSON.
+			$json_match = preg_match( '/\[.*\]/s', $response, $matches );
+			$topics     = $json_match ? json_decode( $matches[0], true ) : array();
+
+			if ( empty( $topics ) || ! is_array( $topics ) ) {
+				return array();
+			}
+
+			return array_map( 'trim', $topics );
+		} catch ( \Exception $e ) {
+			$this->log_error( 'Failed to auto-generate topics: ' . $e->getMessage() );
+			return array();
+		}
+	}
+
+	/**
+	 * Get the next topic for generation (legacy method for compatibility).
+	 *
+	 * @param array $settings Integration settings.
+	 * @return string The topic to use.
+	 * @deprecated Use peek_next_topic and consume_topic instead.
+	 */
+	private function get_next_topic( array $settings ): string {
+		return $this->peek_next_topic( $settings );
 	}
 
 	/**
@@ -524,6 +671,9 @@ class AutoScheduler extends IntegrationBase {
 			// Add meta to track auto-generated posts.
 			update_post_meta( $post_id, '_aiauthor_auto_generated', true );
 			update_post_meta( $post_id, '_aiauthor_generation_date', current_time( 'mysql' ) );
+
+			// Trigger post created action for integrations (e.g., Pixabay featured image).
+			do_action( 'aiauthor_post_created', $post_id, $post_data['post_title'], $post_data['post_content'] );
 
 			return array(
 				'success' => true,
@@ -751,6 +901,70 @@ class AutoScheduler extends IntegrationBase {
 					'post_id'  => $result['post_id'],
 					'title'    => $result['title'],
 					'edit_url' => get_edit_post_link( $result['post_id'], 'raw' ),
+				)
+			);
+		} else {
+			wp_send_json_error( array( 'message' => $result['message'] ) );
+		}
+	}
+
+	/**
+	 * AJAX handler for force run (manual post generation with actual settings).
+	 */
+	public function ajax_force_run(): void {
+		check_ajax_referer( 'aiauthor_scheduler_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'ai-author-for-websites' ) ) );
+		}
+
+		$settings = $this->get_settings();
+
+		// Check if we have topics available.
+		$topic = $this->peek_next_topic( $settings );
+
+		if ( empty( $topic ) ) {
+			wp_send_json_error( array( 'message' => __( 'No topics available. Please add topics to the queue or enable auto-generate topics.', 'ai-author-for-websites' ) ) );
+		}
+
+		// Generate post with actual settings (not draft like test).
+		$result = $this->generate_post( $topic, $settings );
+
+		if ( $result['success'] ) {
+			// Remove the topic from the queue.
+			$this->consume_topic( $topic );
+
+			// Refresh settings after topic consumption.
+			$settings = $this->get_settings();
+
+			// Update statistics.
+			$settings['last_run']        = current_time( 'mysql' );
+			$settings['posts_generated'] = ( $settings['posts_generated'] ?? 0 ) + 1;
+			$this->update_settings( $settings );
+
+			$this->log_success( sprintf( 'Force run: Successfully generated post: %s', $result['title'] ) );
+
+			// Check if topics are running low and auto-generate if needed.
+			$this->maybe_replenish_topics();
+
+			// Get updated topic count.
+			$updated_settings = $this->get_settings();
+			$topics_remaining = count( $updated_settings['topics'] ?? array() );
+
+			wp_send_json_success(
+				array(
+					'message'          => sprintf(
+						/* translators: %s: post status */
+						__( 'Post generated and %s successfully!', 'ai-author-for-websites' ),
+						'publish' === $settings['post_status'] ? __( 'published', 'ai-author-for-websites' ) : __( 'saved as draft', 'ai-author-for-websites' )
+					),
+					'post_id'          => $result['post_id'],
+					'title'            => $result['title'],
+					'status'           => $settings['post_status'],
+					'edit_url'         => get_edit_post_link( $result['post_id'], 'raw' ),
+					'view_url'         => get_permalink( $result['post_id'] ),
+					'topics_remaining' => $topics_remaining,
+					'posts_generated'  => $updated_settings['posts_generated'],
 				)
 			);
 		} else {

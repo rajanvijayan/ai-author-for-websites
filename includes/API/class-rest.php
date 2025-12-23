@@ -670,6 +670,9 @@ class REST {
 			wp_set_post_tags( $post_id, $tag_names );
 		}
 
+		// Trigger post created action for integrations (e.g., Pixabay featured image).
+		do_action( 'aiauthor_post_created', $post_id, $title, $content );
+
 		// Prepare response message.
 		switch ( $status ) {
 			case 'publish':
