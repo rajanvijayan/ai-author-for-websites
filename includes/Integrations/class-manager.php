@@ -173,10 +173,13 @@ class Manager {
 	}
 
 	/**
-	 * Initialize all enabled integrations.
+	 * Initialize all integrations.
+	 *
+	 * All integrations get initialized so they can register hooks,
+	 * but they should check their enabled status internally for functionality.
 	 */
 	public function init_enabled_integrations(): void {
-		foreach ( $this->get_enabled() as $integration ) {
+		foreach ( $this->integrations as $integration ) {
 			$integration->init();
 		}
 	}

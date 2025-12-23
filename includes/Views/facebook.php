@@ -372,12 +372,16 @@ jQuery(document).ready(function($) {
 				if (response.success && response.data.auth_url) {
 					window.location.href = response.data.auth_url;
 				} else {
-					alert(response.data.message || '<?php echo esc_js( __( 'Failed to start OAuth.', 'ai-author-for-websites' ) ); ?>');
+					if (typeof window.aiauthorShowToast === 'function') {
+						window.aiauthorShowToast('error', '<?php echo esc_js( __( 'Connection Failed', 'ai-author-for-websites' ) ); ?>', response.data.message || '<?php echo esc_js( __( 'Failed to start OAuth.', 'ai-author-for-websites' ) ); ?>');
+					}
 					$btn.prop('disabled', false).html('<span class="dashicons dashicons-facebook" style="margin-top: 3px;"></span> <?php echo esc_js( __( 'Connect to Facebook', 'ai-author-for-websites' ) ); ?>');
 				}
 			},
 			error: function() {
-				alert('<?php echo esc_js( __( 'An error occurred.', 'ai-author-for-websites' ) ); ?>');
+				if (typeof window.aiauthorShowToast === 'function') {
+					window.aiauthorShowToast('error', '<?php echo esc_js( __( 'Error', 'ai-author-for-websites' ) ); ?>', '<?php echo esc_js( __( 'An error occurred.', 'ai-author-for-websites' ) ); ?>');
+				}
 				$btn.prop('disabled', false).html('<span class="dashicons dashicons-facebook" style="margin-top: 3px;"></span> <?php echo esc_js( __( 'Connect to Facebook', 'ai-author-for-websites' ) ); ?>');
 			}
 		});
@@ -403,7 +407,9 @@ jQuery(document).ready(function($) {
 				if (response.success) {
 					location.reload();
 				} else {
-					alert(response.data.message);
+					if (typeof window.aiauthorShowToast === 'function') {
+						window.aiauthorShowToast('error', '<?php echo esc_js( __( 'Disconnect Failed', 'ai-author-for-websites' ) ); ?>', response.data.message);
+					}
 					$btn.prop('disabled', false);
 				}
 			}
@@ -455,7 +461,9 @@ jQuery(document).ready(function($) {
 				if (response.success) {
 					location.reload();
 				} else {
-					alert(response.data.message);
+					if (typeof window.aiauthorShowToast === 'function') {
+						window.aiauthorShowToast('error', '<?php echo esc_js( __( 'Selection Failed', 'ai-author-for-websites' ) ); ?>', response.data.message);
+					}
 					$btn.prop('disabled', false).text('<?php echo esc_js( __( 'Select', 'ai-author-for-websites' ) ); ?>');
 				}
 			}

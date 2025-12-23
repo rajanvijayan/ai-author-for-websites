@@ -366,33 +366,138 @@ class Pixabay extends IntegrationBase {
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param string $title   Post title.
-	 * @param string $content Post content.
+	 * @param string $content Post content (unused but kept for hook compatibility).
 	 */
 	public function maybe_set_featured_image( int $post_id, string $title, string $content ): void {
+		// Always log that the action was triggered (helps with debugging).
+		$this->log_activity( 'info', sprintf( 'Hook triggered for post ID %d: "%s"', $post_id, $title ) );
+
 		$settings = $this->get_settings();
+
+		// Check if integration is enabled.
+		if ( ! $this->is_enabled() ) {
+			$this->log_activity( 'skipped', 'Integration is not enabled' );
+			return;
+		}
 
 		// Check if auto-set is enabled.
 		if ( empty( $settings['auto_set_featured'] ) ) {
+			$this->log_activity( 'skipped', 'Auto-set featured image is disabled' );
+			return;
+		}
+
+		// Check if API key is configured.
+		if ( empty( $settings['api_key'] ) ) {
+			$this->log_activity( 'error', 'Pixabay API key is not configured' );
+			return;
+		}
+
+		// Verify the post exists.
+		$post = get_post( $post_id );
+		if ( ! $post ) {
+			$this->log_activity( 'error', sprintf( 'Post ID %d does not exist', $post_id ) );
 			return;
 		}
 
 		// Check if post already has a featured image.
 		if ( has_post_thumbnail( $post_id ) ) {
+			$this->log_activity( 'skipped', 'Post already has a featured image' );
 			return;
 		}
 
-		// Search for an image based on the title.
-		$result = $this->search_images( $title, 1, 5 );
+		// Use a simpler search query (first few words of title).
+		$search_query = $this->simplify_search_query( $title );
+		$this->log_activity( 'info', sprintf( 'Searching Pixabay for: "%s"', $search_query ) );
 
-		if ( isset( $result['error'] ) || empty( $result['images'] ) ) {
+		$result = $this->search_images( $search_query, 1, 5 );
+
+		if ( isset( $result['error'] ) ) {
+			$this->log_activity( 'error', sprintf( 'Search error: %s', $result['error'] ) );
+			return;
+		}
+
+		if ( empty( $result['images'] ) ) {
+			$this->log_activity( 'warning', 'No images found on Pixabay' );
 			return;
 		}
 
 		// Get the first image.
 		$image = $result['images'][0];
+		$this->log_activity( 'info', sprintf( 'Found %d images, using first: %s', count( $result['images'] ), $image['full_url'] ) );
 
 		// Set it as the featured image.
-		$this->set_featured_image( $post_id, $image['full_url'], $title );
+		$set_result = $this->set_featured_image( $post_id, $image['full_url'], $title );
+
+		if ( isset( $set_result['error'] ) ) {
+			$this->log_activity( 'error', sprintf( 'Failed to set image: %s', $set_result['error'] ) );
+		} else {
+			$this->log_activity( 'success', sprintf( 'Featured image set! Attachment ID: %d', $set_result['attachment_id'] ) );
+		}
+	}
+
+	/**
+	 * Simplify search query for better Pixabay results.
+	 *
+	 * @param string $title The post title.
+	 * @return string Simplified search query.
+	 */
+	private function simplify_search_query( string $title ): string {
+		// Remove common words and special characters.
+		$title = preg_replace( '/[^a-zA-Z0-9\s]/', '', $title );
+		$words = explode( ' ', trim( $title ) );
+
+		// Remove common stop words.
+		$stop_words = array( 'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'how', 'what', 'when', 'where', 'why', 'which', 'who', 'whom', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'my', 'your', 'his', 'her', 'its', 'our', 'their' );
+		$words      = array_filter( $words, fn( $w ) => ! in_array( strtolower( $w ), $stop_words, true ) && strlen( $w ) > 2 );
+
+		// Take first 3-4 meaningful words.
+		$words = array_slice( array_values( $words ), 0, 4 );
+
+		return implode( ' ', $words );
+	}
+
+	/**
+	 * Log activity for debugging (stored in options).
+	 *
+	 * @param string $type    Log type (info, success, error, warning, skipped).
+	 * @param string $message Log message.
+	 */
+	private function log_activity( string $type, string $message ): void {
+		$logs   = get_option( 'aiauthor_pixabay_logs', array() );
+		$logs[] = array(
+			'type'    => $type,
+			'message' => $message,
+			'date'    => current_time( 'mysql' ),
+		);
+
+		// Keep only the last 50 entries.
+		$logs = array_slice( $logs, -50 );
+
+		update_option( 'aiauthor_pixabay_logs', $logs );
+
+		// Also log to error_log if WP_DEBUG is on.
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			error_log( sprintf( 'AI Author Pixabay [%s]: %s', strtoupper( $type ), $message ) );
+		}
+	}
+
+	/**
+	 * Get activity logs.
+	 *
+	 * @param int $limit Number of logs to return.
+	 * @return array Array of log entries.
+	 */
+	public function get_logs( int $limit = 20 ): array {
+		$logs = get_option( 'aiauthor_pixabay_logs', array() );
+		return array_slice( array_reverse( $logs ), 0, $limit );
+	}
+
+	/**
+	 * Clear activity logs.
+	 */
+	public function clear_logs(): void {
+		delete_option( 'aiauthor_pixabay_logs' );
 	}
 
 	/**

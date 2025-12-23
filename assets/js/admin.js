@@ -25,6 +25,9 @@
         initConfirmModal();
     });
 
+    // Expose showToast globally for use in inline scripts
+    window.aiauthorShowToast = showToast;
+
     /* ==========================================================================
        Toast Notification System
        ========================================================================== */

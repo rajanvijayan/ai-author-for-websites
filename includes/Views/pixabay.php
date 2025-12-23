@@ -39,6 +39,7 @@ if ( isset( $_POST['aiauthor_pixabay_save'] ) && check_admin_referer( 'aiauthor_
 // Get options.
 $image_types  = $pixabay->get_image_type_options();
 $orientations = $pixabay->get_orientation_options();
+$logs         = $pixabay->get_logs( 15 );
 ?>
 <div class="wrap aiauthor-admin aiauthor-pixabay">
 	<h1>
@@ -307,6 +308,50 @@ $orientations = $pixabay->get_orientation_options();
 						<li><?php esc_html_e( 'You can manually choose images in the Generate Post page.', 'ai-author-for-websites' ); ?></li>
 					</ul>
 				</div>
+
+				<!-- Activity Log -->
+				<div class="aiauthor-card">
+					<h2>
+						<span class="dashicons dashicons-list-view"></span>
+						<?php esc_html_e( 'Activity Log', 'ai-author-for-websites' ); ?>
+					</h2>
+					<p class="description"><?php esc_html_e( 'Recent Pixabay integration activity (for debugging).', 'ai-author-for-websites' ); ?></p>
+					<?php if ( empty( $logs ) ) : ?>
+						<p class="aiauthor-no-logs"><?php esc_html_e( 'No activity yet. Generate a post to see logs.', 'ai-author-for-websites' ); ?></p>
+					<?php else : ?>
+						<ul class="aiauthor-pixabay-log">
+							<?php foreach ( $logs as $log ) : ?>
+								<?php
+								$icon_class = 'dashicons-info';
+								$log_class  = 'info';
+								switch ( $log['type'] ) {
+									case 'success':
+										$icon_class = 'dashicons-yes-alt';
+										$log_class  = 'success';
+										break;
+									case 'error':
+										$icon_class = 'dashicons-warning';
+										$log_class  = 'error';
+										break;
+									case 'warning':
+										$icon_class = 'dashicons-flag';
+										$log_class  = 'warning';
+										break;
+									case 'skipped':
+										$icon_class = 'dashicons-dismiss';
+										$log_class  = 'skipped';
+										break;
+								}
+								?>
+								<li class="aiauthor-log-<?php echo esc_attr( $log_class ); ?>">
+									<span class="dashicons <?php echo esc_attr( $icon_class ); ?>"></span>
+									<span class="aiauthor-log-message"><?php echo esc_html( $log['message'] ); ?></span>
+									<span class="aiauthor-log-date"><?php echo esc_html( human_time_diff( strtotime( $log['date'] ) ) ); ?> ago</span>
+								</li>
+							<?php endforeach; ?>
+						</ul>
+					<?php endif; ?>
+				</div>
 			</div>
 		</div>
 	</form>
@@ -321,7 +366,9 @@ jQuery(document).ready(function($) {
 		var query = $('#test-query').val();
 
 		if (!query) {
-			alert('<?php echo esc_js( __( 'Please enter a search term.', 'ai-author-for-websites' ) ); ?>');
+			if (typeof window.aiauthorShowToast === 'function') {
+				window.aiauthorShowToast('warning', '<?php echo esc_js( __( 'Search Required', 'ai-author-for-websites' ) ); ?>', '<?php echo esc_js( __( 'Please enter a search term.', 'ai-author-for-websites' ) ); ?>');
+			}
 			return;
 		}
 
@@ -475,6 +522,73 @@ jQuery(document).ready(function($) {
 
 @keyframes spin {
 	100% { transform: rotate(360deg); }
+}
+
+.aiauthor-no-logs {
+	color: #666;
+	font-style: italic;
+	margin: 0;
+}
+
+.aiauthor-pixabay-log {
+	list-style: none;
+	margin: 12px 0 0;
+	padding: 0;
+	max-height: 300px;
+	overflow-y: auto;
+}
+
+.aiauthor-pixabay-log li {
+	padding: 8px 0;
+	border-bottom: 1px solid #eee;
+	display: flex;
+	align-items: flex-start;
+	gap: 6px;
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.aiauthor-pixabay-log li:last-child {
+	border-bottom: none;
+}
+
+.aiauthor-pixabay-log .dashicons {
+	font-size: 14px;
+	width: 14px;
+	height: 14px;
+	flex-shrink: 0;
+	margin-top: 2px;
+}
+
+.aiauthor-log-success .dashicons {
+	color: #46b450;
+}
+
+.aiauthor-log-error .dashicons {
+	color: #dc3232;
+}
+
+.aiauthor-log-warning .dashicons {
+	color: #f0b849;
+}
+
+.aiauthor-log-skipped .dashicons {
+	color: #999;
+}
+
+.aiauthor-log-info .dashicons {
+	color: #0073aa;
+}
+
+.aiauthor-log-message {
+	flex: 1;
+	word-break: break-word;
+}
+
+.aiauthor-log-date {
+	font-size: 10px;
+	color: #999;
+	flex-shrink: 0;
 }
 
 @media (max-width: 1200px) {

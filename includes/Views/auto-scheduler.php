@@ -416,13 +416,41 @@ $next_run = wp_next_scheduled( 'aiauthor_auto_scheduler_generate' );
 					<?php endif; ?>
 				</div>
 
+				<!-- Force Run -->
+				<div class="aiauthor-card">
+					<h2>
+						<span class="dashicons dashicons-controls-play" style="color: #0073aa;"></span>
+						<?php esc_html_e( 'Manual Run', 'ai-author-for-websites' ); ?>
+					</h2>
+					<p><?php esc_html_e( 'Force run the scheduler now. Uses next topic from queue with your actual post settings.', 'ai-author-for-websites' ); ?></p>
+					
+					<div class="aiauthor-force-run-form">
+						<button type="button" id="force-run-btn" class="button button-primary" <?php disabled( ! $has_api_key ); ?>>
+							<span class="dashicons dashicons-update"></span>
+							<?php esc_html_e( 'Force Run Now', 'ai-author-for-websites' ); ?>
+						</button>
+						<p class="description" style="margin-top: 8px;">
+							<?php
+							printf(
+								/* translators: %s: post status */
+								esc_html__( 'Post will be %s based on your settings.', 'ai-author-for-websites' ),
+								'publish' === ( $settings['post_status'] ?? 'publish' )
+									? '<strong>' . esc_html__( 'published', 'ai-author-for-websites' ) . '</strong>'
+									: '<strong>' . esc_html__( 'saved as draft', 'ai-author-for-websites' ) . '</strong>'
+							);
+							?>
+						</p>
+					</div>
+					<div id="force-run-result" class="aiauthor-test-result" style="display: none;"></div>
+				</div>
+
 				<!-- Test Generation -->
 				<div class="aiauthor-card">
 					<h2>
 						<span class="dashicons dashicons-admin-generic"></span>
 						<?php esc_html_e( 'Test Generation', 'ai-author-for-websites' ); ?>
 					</h2>
-					<p><?php esc_html_e( 'Generate a test post (saved as draft) to verify your settings.', 'ai-author-for-websites' ); ?></p>
+					<p><?php esc_html_e( 'Generate a test post (always saved as draft) to verify your settings.', 'ai-author-for-websites' ); ?></p>
 					
 					<div class="aiauthor-test-form">
 						<input type="text" 
@@ -535,13 +563,73 @@ jQuery(document).ready(function($) {
 					var existing = $textarea.val().trim();
 					var newTopics = response.data.topics.join('\n');
 					$textarea.val(existing ? existing + '\n' + newTopics : newTopics);
+					if (typeof window.aiauthorShowToast === 'function') {
+						window.aiauthorShowToast('success', '<?php echo esc_js( __( 'Topics Generated', 'ai-author-for-websites' ) ); ?>', '<?php echo esc_js( __( 'New topics have been added to the queue.', 'ai-author-for-websites' ) ); ?>');
+					}
 				} else {
-					alert(response.data.message);
+					if (typeof window.aiauthorShowToast === 'function') {
+						window.aiauthorShowToast('error', '<?php echo esc_js( __( 'Generation Failed', 'ai-author-for-websites' ) ); ?>', response.data.message);
+					}
 				}
 			},
 			error: function() {
 				$btn.prop('disabled', false).find('.dashicons').removeClass('dashicons-update spin').addClass('dashicons-lightbulb');
-				alert('<?php echo esc_js( __( 'Failed to generate topics.', 'ai-author-for-websites' ) ); ?>');
+				if (typeof window.aiauthorShowToast === 'function') {
+					window.aiauthorShowToast('error', '<?php echo esc_js( __( 'Error', 'ai-author-for-websites' ) ); ?>', '<?php echo esc_js( __( 'Failed to generate topics.', 'ai-author-for-websites' ) ); ?>');
+				}
+			}
+		});
+	});
+
+	// Force run.
+	$('#force-run-btn').on('click', function() {
+		var $btn = $(this);
+		var $result = $('#force-run-result');
+
+		if (!confirm('<?php echo esc_js( __( 'This will generate and publish/save a post using the next topic from your queue. Continue?', 'ai-author-for-websites' ) ); ?>')) {
+			return;
+		}
+
+		$btn.prop('disabled', true).find('.dashicons').removeClass('dashicons-update').addClass('dashicons-update spin');
+		$result.hide();
+
+		$.ajax({
+			url: ajaxurl,
+			type: 'POST',
+			data: {
+				action: 'aiauthor_scheduler_force_run',
+				nonce: '<?php echo esc_js( wp_create_nonce( 'aiauthor_scheduler_nonce' ) ); ?>'
+			},
+			success: function(response) {
+				$btn.prop('disabled', false).find('.dashicons').removeClass('spin');
+				
+				if (response.success) {
+					var statusBadge = response.data.status === 'publish' 
+						? '<span class="aiauthor-status-badge published"><?php echo esc_js( __( 'Published', 'ai-author-for-websites' ) ); ?></span>'
+						: '<span class="aiauthor-status-badge draft"><?php echo esc_js( __( 'Draft', 'ai-author-for-websites' ) ); ?></span>';
+
+					$result.html(
+						'<div class="notice notice-success">' +
+						'<p><strong>' + response.data.message + '</strong> ' + statusBadge + '</p>' +
+						'<p><?php echo esc_js( __( 'Title:', 'ai-author-for-websites' ) ); ?> ' + response.data.title + '</p>' +
+						'<p>' +
+						'<a href="' + response.data.edit_url + '" class="button" target="_blank"><?php echo esc_js( __( 'Edit Post', 'ai-author-for-websites' ) ); ?></a> ' +
+						(response.data.status === 'publish' ? '<a href="' + response.data.view_url + '" class="button" target="_blank"><?php echo esc_js( __( 'View Post', 'ai-author-for-websites' ) ); ?></a>' : '') +
+						'</p>' +
+						'<p class="description"><?php echo esc_js( __( 'Topics remaining:', 'ai-author-for-websites' ) ); ?> ' + response.data.topics_remaining + ' | <?php echo esc_js( __( 'Total generated:', 'ai-author-for-websites' ) ); ?> ' + response.data.posts_generated + '</p>' +
+						'</div>'
+					).show();
+
+					// Update the statistics display.
+					$('.aiauthor-stat-number').first().text(response.data.posts_generated);
+					$('.aiauthor-stat-number').last().text(response.data.topics_remaining);
+				} else {
+					$result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>').show();
+				}
+			},
+			error: function() {
+				$btn.prop('disabled', false).find('.dashicons').removeClass('spin');
+				$result.html('<div class="notice notice-error"><p><?php echo esc_js( __( 'An error occurred.', 'ai-author-for-websites' ) ); ?></p></div>').show();
 			}
 		});
 	});
@@ -697,6 +785,35 @@ jQuery(document).ready(function($) {
 
 @keyframes spin {
 	100% { transform: rotate(360deg); }
+}
+
+.aiauthor-force-run-form {
+	margin-top: 12px;
+}
+
+.aiauthor-force-run-form .button-primary .dashicons {
+	margin-top: 3px;
+	margin-right: 4px;
+}
+
+.aiauthor-status-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	margin-left: 8px;
+}
+
+.aiauthor-status-badge.published {
+	background: #46b450;
+	color: #fff;
+}
+
+.aiauthor-status-badge.draft {
+	background: #f0b849;
+	color: #1e1e1e;
 }
 
 @media (max-width: 1200px) {
