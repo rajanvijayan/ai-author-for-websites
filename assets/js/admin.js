@@ -944,12 +944,9 @@
         $btn.prop('disabled', true).find('.dashicons').removeClass('dashicons-admin-generic').addClass('dashicons-update spin');
         $loading.show();
 
-        // Detect which SEO plugin endpoint to use
-        var endpoint = 'yoast-seo/generate';
-        
-        // Try Yoast first, then Rankmath
+        // Use general SEO endpoint that works without requiring integration
         $.ajax({
-            url: aiauthorAdmin.restUrl + endpoint,
+            url: aiauthorAdmin.restUrl + 'generate-seo',
             method: 'POST',
             headers: {
                 'X-WP-Nonce': aiauthorAdmin.nonce
@@ -959,47 +956,12 @@
                 content: content
             },
             success: function(response) {
-                if (response.success && response.data) {
-                    // Populate SEO fields - handle both Yoast and Rankmath responses
-                    var focusKey = response.data.focus_keyphrase || response.data.focus_keyword || '';
-                    var metaDesc = response.data.meta_description || '';
-                    var seoTitle = response.data.seo_title || '';
-
-                    $('#seo-focus-keyword').val(focusKey);
-                    $('#seo-title').val(seoTitle).trigger('input');
-                    $('#seo-meta-desc').val(metaDesc).trigger('input');
-
-                    showToast('success', 'SEO Generated', 'SEO metadata has been generated successfully.');
-                } else {
-                    // Try Rankmath endpoint as fallback
-                    tryRankmathSEO(title, content);
-                }
-            },
-            error: function() {
-                // Try Rankmath endpoint as fallback
-                tryRankmathSEO(title, content);
-            },
-            complete: function() {
                 $btn.prop('disabled', false).find('.dashicons').removeClass('dashicons-update spin').addClass('dashicons-admin-generic');
                 $loading.hide();
-            }
-        });
-    }
 
-    function tryRankmathSEO(title, content) {
-        $.ajax({
-            url: aiauthorAdmin.restUrl + 'rankmath/generate',
-            method: 'POST',
-            headers: {
-                'X-WP-Nonce': aiauthorAdmin.nonce
-            },
-            data: {
-                title: title,
-                content: content
-            },
-            success: function(response) {
                 if (response.success && response.data) {
-                    var focusKey = response.data.focus_keyword || '';
+                    // Populate SEO fields - handle both naming conventions
+                    var focusKey = response.data.focus_keyword || response.data.focus_keyphrase || '';
                     var metaDesc = response.data.meta_description || '';
                     var seoTitle = response.data.seo_title || '';
 
@@ -1013,8 +975,14 @@
                 }
             },
             error: function(xhr) {
-                var message = xhr.responseJSON?.message || 'Failed to generate SEO data.';
-                showToast('error', 'SEO Generation Failed', message);
+                $btn.prop('disabled', false).find('.dashicons').removeClass('dashicons-update spin').addClass('dashicons-admin-generic');
+                $loading.hide();
+                
+                var errorMsg = 'Could not connect to SEO generation service.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                showToast('error', 'SEO Generation Failed', errorMsg);
             }
         });
     }

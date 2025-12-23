@@ -98,6 +98,17 @@ class REST {
 				'permission_callback' => array( $this, 'admin_permission_check' ),
 			)
 		);
+
+		// Generate SEO data (general endpoint, works without integration).
+		register_rest_route(
+			$this->namespace,
+			'/generate-seo',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'generate_seo' ),
+				'permission_callback' => array( $this, 'admin_permission_check' ),
+			)
+		);
 	}
 
 	/**
@@ -722,6 +733,115 @@ class REST {
 			),
 			200
 		);
+	}
+
+	/**
+	 * Generate SEO data using AI.
+	 *
+	 * General endpoint that works without requiring SEO integration to be enabled.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 * @return \WP_REST_Response The response.
+	 */
+	public function generate_seo( $request ) {
+		$title   = sanitize_text_field( $request->get_param( 'title' ) );
+		$content = wp_kses_post( $request->get_param( 'content' ) );
+
+		if ( empty( $title ) && empty( $content ) ) {
+			return new \WP_REST_Response(
+				array(
+					'success' => false,
+					'message' => __( 'Title or content is required.', 'ai-author-for-websites' ),
+				),
+				400
+			);
+		}
+
+		$settings = Plugin::get_settings();
+
+		if ( empty( $settings['api_key'] ) ) {
+			return new \WP_REST_Response(
+				array(
+					'success' => false,
+					'message' => __( 'API key is not configured.', 'ai-author-for-websites' ),
+				),
+				400
+			);
+		}
+
+		try {
+			$ai = new AIEngine(
+				$settings['api_key'],
+				array(
+					'provider' => $settings['provider'] ?? 'groq',
+					'model'    => $settings['model'] ?? 'llama-3.3-70b-versatile',
+					'timeout'  => 60,
+				)
+			);
+
+			$content_excerpt = wp_trim_words( wp_strip_all_tags( $content ), 300 );
+
+			$prompt  = "Generate SEO metadata for the following blog post.\n\n";
+			$prompt .= "Title: {$title}\n\n";
+			$prompt .= "Content (excerpt): {$content_excerpt}\n\n";
+			$prompt .= "Generate the following with EXACT length requirements:\n\n";
+			$prompt .= "1. Focus Keyword: A 2-4 word phrase that best represents the main topic (e.g., 'productivity tips', 'healthy recipes', 'digital marketing strategies')\n\n";
+			$prompt .= '2. Meta Description: MUST be between 145-160 characters. This is the snippet shown in Google search results. ';
+			$prompt .= 'Make it compelling with a call-to-action. Include the focus keyword naturally. ';
+			$prompt .= "Example: 'Discover 10 proven productivity tips that will transform your workday. Learn how to manage time effectively and achieve more in less time.'\n\n";
+			$prompt .= '3. SEO Title: MUST be between 50-60 characters. Include the focus keyword near the beginning. ';
+			$prompt .= "Make it click-worthy. Example: '10 Productivity Tips to Transform Your Workday | Guide'\n\n";
+			$prompt .= "IMPORTANT: Meta description must be at least 145 characters and SEO title must be at least 50 characters.\n\n";
+			$prompt .= "Return the response in this exact JSON format:\n";
+			$prompt .= '{"focus_keyword": "your keyword", "meta_description": "your 145-160 character description here", "seo_title": "your 50-60 character title here"}';
+			$prompt .= "\n\nOnly return the JSON, nothing else.";
+
+			$response = $ai->generateContent( $prompt );
+
+			if ( is_array( $response ) && isset( $response['error'] ) ) {
+				return new \WP_REST_Response(
+					array(
+						'success' => false,
+						'message' => $response['error'],
+					),
+					400
+				);
+			}
+
+			// Parse JSON response.
+			$json_match = preg_match( '/\{.*\}/s', $response, $matches );
+			$seo_data   = $json_match ? json_decode( $matches[0], true ) : null;
+
+			if ( ! $seo_data ) {
+				return new \WP_REST_Response(
+					array(
+						'success' => false,
+						'message' => __( 'Could not parse AI response.', 'ai-author-for-websites' ),
+					),
+					400
+				);
+			}
+
+			return new \WP_REST_Response(
+				array(
+					'success' => true,
+					'data'    => array(
+						'focus_keyword'    => $seo_data['focus_keyword'] ?? '',
+						'meta_description' => $seo_data['meta_description'] ?? '',
+						'seo_title'        => $seo_data['seo_title'] ?? '',
+					),
+				),
+				200
+			);
+		} catch ( \Exception $e ) {
+			return new \WP_REST_Response(
+				array(
+					'success' => false,
+					'message' => $e->getMessage(),
+				),
+				500
+			);
+		}
 	}
 
 	/**
