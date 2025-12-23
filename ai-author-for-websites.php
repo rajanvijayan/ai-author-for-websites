@@ -42,6 +42,9 @@ require_once AIAUTHOR_PLUGIN_DIR . 'includes/Integrations/class-integration-inte
 require_once AIAUTHOR_PLUGIN_DIR . 'includes/Integrations/class-integration-base.php';
 require_once AIAUTHOR_PLUGIN_DIR . 'includes/Integrations/class-manager.php';
 
+// Load Updater.
+require_once AIAUTHOR_PLUGIN_DIR . 'includes/Updater/class-updater.php';
+
 /**
  * Initialize plugin.
  *
@@ -53,6 +56,11 @@ function aiauthor_init() {
 
 // Start the plugin.
 add_action( 'plugins_loaded', 'aiauthor_init' );
+
+// Initialize updater.
+add_action( 'admin_init', function() {
+	\AIAuthor\Updater\Updater::get_instance();
+});
 
 // Add settings link on plugins page.
 add_filter(
