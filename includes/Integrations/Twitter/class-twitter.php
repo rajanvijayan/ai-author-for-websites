@@ -312,6 +312,11 @@ class Twitter extends IntegrationBase {
 	 * @param \WP_Post $post    Post object.
 	 */
 	public function maybe_share_on_publish( int $post_id, $post ): void {
+		// Check if integration is enabled.
+		if ( ! $this->is_enabled() ) {
+			return;
+		}
+
 		$settings = $this->get_settings();
 
 		// Check if auto-share is enabled.
@@ -338,6 +343,11 @@ class Twitter extends IntegrationBase {
 	 * @param \WP_Post $post Post object.
 	 */
 	public function maybe_share_on_schedule( $post ): void {
+		// Check if integration is enabled.
+		if ( ! $this->is_enabled() ) {
+			return;
+		}
+
 		$settings = $this->get_settings();
 
 		// Check if auto-share is enabled.
@@ -366,6 +376,11 @@ class Twitter extends IntegrationBase {
 	 * @param string $content Post content.
 	 */
 	public function maybe_share_scheduled_post( int $post_id, string $title, string $content ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		// Check if integration is enabled.
+		if ( ! $this->is_enabled() ) {
+			return;
+		}
+
 		$settings = $this->get_settings();
 
 		// Check if auto-share is enabled.

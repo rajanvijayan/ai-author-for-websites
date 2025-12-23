@@ -366,25 +366,46 @@ class Pixabay extends IntegrationBase {
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param string $title   Post title.
-	 * @param string $content Post content.
+	 * @param string $content Post content (unused but kept for hook compatibility).
 	 */
 	public function maybe_set_featured_image( int $post_id, string $title, string $content ): void {
 		$settings = $this->get_settings();
 
+		// Check if integration is enabled.
+		if ( ! $this->is_enabled() ) {
+			$this->log_debug( 'Pixabay integration is not enabled. Skipping featured image.' );
+			return;
+		}
+
 		// Check if auto-set is enabled.
 		if ( empty( $settings['auto_set_featured'] ) ) {
+			$this->log_debug( 'Auto-set featured image is disabled. Skipping.' );
+			return;
+		}
+
+		// Check if API key is configured.
+		if ( empty( $settings['api_key'] ) ) {
+			$this->log_debug( 'Pixabay API key is not configured. Skipping featured image.' );
 			return;
 		}
 
 		// Check if post already has a featured image.
 		if ( has_post_thumbnail( $post_id ) ) {
+			$this->log_debug( 'Post already has a featured image. Skipping.' );
 			return;
 		}
 
 		// Search for an image based on the title.
+		$this->log_debug( sprintf( 'Searching Pixabay for images matching: %s', $title ) );
 		$result = $this->search_images( $title, 1, 5 );
 
-		if ( isset( $result['error'] ) || empty( $result['images'] ) ) {
+		if ( isset( $result['error'] ) ) {
+			$this->log_debug( sprintf( 'Pixabay search error: %s', $result['error'] ) );
+			return;
+		}
+
+		if ( empty( $result['images'] ) ) {
+			$this->log_debug( 'No images found on Pixabay for this title.' );
 			return;
 		}
 
@@ -392,7 +413,26 @@ class Pixabay extends IntegrationBase {
 		$image = $result['images'][0];
 
 		// Set it as the featured image.
-		$this->set_featured_image( $post_id, $image['full_url'], $title );
+		$this->log_debug( sprintf( 'Setting featured image from Pixabay: %s', $image['full_url'] ) );
+		$set_result = $this->set_featured_image( $post_id, $image['full_url'], $title );
+
+		if ( isset( $set_result['error'] ) ) {
+			$this->log_debug( sprintf( 'Failed to set featured image: %s', $set_result['error'] ) );
+		} else {
+			$this->log_debug( sprintf( 'Successfully set featured image. Attachment ID: %d', $set_result['attachment_id'] ) );
+		}
+	}
+
+	/**
+	 * Log debug message.
+	 *
+	 * @param string $message Debug message.
+	 */
+	private function log_debug( string $message ): void {
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			error_log( 'AI Author Pixabay: ' . $message );
+		}
 	}
 
 	/**
