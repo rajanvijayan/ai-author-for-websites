@@ -563,13 +563,20 @@ jQuery(document).ready(function($) {
 					var existing = $textarea.val().trim();
 					var newTopics = response.data.topics.join('\n');
 					$textarea.val(existing ? existing + '\n' + newTopics : newTopics);
+					if (typeof window.aiauthorShowToast === 'function') {
+						window.aiauthorShowToast('success', '<?php echo esc_js( __( 'Topics Generated', 'ai-author-for-websites' ) ); ?>', '<?php echo esc_js( __( 'New topics have been added to the queue.', 'ai-author-for-websites' ) ); ?>');
+					}
 				} else {
-					alert(response.data.message);
+					if (typeof window.aiauthorShowToast === 'function') {
+						window.aiauthorShowToast('error', '<?php echo esc_js( __( 'Generation Failed', 'ai-author-for-websites' ) ); ?>', response.data.message);
+					}
 				}
 			},
 			error: function() {
 				$btn.prop('disabled', false).find('.dashicons').removeClass('dashicons-update spin').addClass('dashicons-lightbulb');
-				alert('<?php echo esc_js( __( 'Failed to generate topics.', 'ai-author-for-websites' ) ); ?>');
+				if (typeof window.aiauthorShowToast === 'function') {
+					window.aiauthorShowToast('error', '<?php echo esc_js( __( 'Error', 'ai-author-for-websites' ) ); ?>', '<?php echo esc_js( __( 'Failed to generate topics.', 'ai-author-for-websites' ) ); ?>');
+				}
 			}
 		});
 	});

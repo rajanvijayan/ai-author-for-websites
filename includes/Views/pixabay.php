@@ -366,7 +366,9 @@ jQuery(document).ready(function($) {
 		var query = $('#test-query').val();
 
 		if (!query) {
-			alert('<?php echo esc_js( __( 'Please enter a search term.', 'ai-author-for-websites' ) ); ?>');
+			if (typeof window.aiauthorShowToast === 'function') {
+				window.aiauthorShowToast('warning', '<?php echo esc_js( __( 'Search Required', 'ai-author-for-websites' ) ); ?>', '<?php echo esc_js( __( 'Please enter a search term.', 'ai-author-for-websites' ) ); ?>');
+			}
 			return;
 		}
 
