@@ -34,7 +34,7 @@ class YoastSEO extends IntegrationBase {
 		'auto_generate_meta'       => true,
 		'generate_focus_keyphrase' => true,
 		'generate_meta_desc'       => true,
-		'meta_desc_length'         => 155,
+		'meta_desc_length'         => 160,
 		'generate_og_title'        => false,
 		'generate_og_desc'         => false,
 	);
@@ -308,12 +308,16 @@ class YoastSEO extends IntegrationBase {
 			$prompt  = "Generate SEO metadata for the following blog post.\n\n";
 			$prompt .= "Title: {$title}\n\n";
 			$prompt .= "Content (excerpt): {$content_excerpt}\n\n";
-			$prompt .= "Generate the following:\n";
-			$prompt .= "1. Focus Keyphrase: A 2-4 word phrase that best represents the main topic\n";
-			$prompt .= "2. Meta Description: A compelling description under {$meta_desc_length} characters that includes the focus keyphrase\n";
-			$prompt .= "3. SEO Title: An optimized title under 60 characters that includes the focus keyphrase\n\n";
+			$prompt .= "Generate the following with EXACT length requirements:\n\n";
+			$prompt .= "1. Focus Keyphrase: A 2-4 word phrase that best represents the main topic (e.g., 'productivity tips', 'healthy recipes', 'digital marketing strategies')\n\n";
+			$prompt .= "2. Meta Description: MUST be between 145-{$meta_desc_length} characters. This is the snippet shown in Google search results. ";
+			$prompt .= 'Make it compelling with a call-to-action. Include the focus keyphrase naturally. ';
+			$prompt .= "Example length: 'Discover 10 proven productivity tips that will transform your workday. Learn how to manage time effectively and achieve more in less time.'\n\n";
+			$prompt .= '3. SEO Title: MUST be between 50-60 characters. Include the focus keyphrase near the beginning. ';
+			$prompt .= "Make it click-worthy. Example: '10 Productivity Tips to Transform Your Workday | Guide'\n\n";
+			$prompt .= "IMPORTANT: Meta description must be at least 145 characters and SEO title must be at least 50 characters.\n\n";
 			$prompt .= "Return the response in this exact JSON format:\n";
-			$prompt .= '{"focus_keyphrase": "your keyphrase", "meta_description": "your description", "seo_title": "your title"}';
+			$prompt .= '{"focus_keyphrase": "your keyphrase", "meta_description": "your 145-155 character description here", "seo_title": "your 50-60 character title here"}';
 			$prompt .= "\n\nOnly return the JSON, nothing else.";
 
 			$response = $ai->generateContent( $prompt );

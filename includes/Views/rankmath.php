@@ -200,13 +200,13 @@ $logs = $rankmath->get_logs( 15 );
 								<input type="number" 
 										id="meta_desc_length" 
 										name="meta_desc_length" 
-										value="<?php echo esc_attr( $settings['meta_desc_length'] ?? 155 ); ?>"
-										min="50"
+										value="<?php echo esc_attr( $settings['meta_desc_length'] ?? 160 ); ?>"
+										min="120"
 										max="320"
 										class="small-text">
 								<?php esc_html_e( 'characters', 'ai-author-for-websites' ); ?>
 								<p class="description">
-									<?php esc_html_e( 'Recommended: 155 characters. Google displays up to 155-160 characters.', 'ai-author-for-websites' ); ?>
+									<?php esc_html_e( 'Recommended: 145-160 characters. Google displays up to 160 characters in search results.', 'ai-author-for-websites' ); ?>
 								</p>
 							</td>
 						</tr>

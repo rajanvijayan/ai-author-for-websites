@@ -885,13 +885,15 @@
             $('#seo-title-count').text(len);
             updateSerpPreview();
             
-            // Visual feedback for length
+            // Visual feedback for length (optimal: 50-60 characters)
             if (len > 60) {
-                $('#seo-title-count').css('color', '#dc3232');
-            } else if (len > 50) {
-                $('#seo-title-count').css('color', '#f0b849');
+                $('#seo-title-count').css('color', '#dc3232'); // Too long - red
+            } else if (len >= 50 && len <= 60) {
+                $('#seo-title-count').css('color', '#46b450'); // Optimal - green
+            } else if (len >= 40) {
+                $('#seo-title-count').css('color', '#f0b849'); // Slightly short - yellow
             } else {
-                $('#seo-title-count').css('color', '');
+                $('#seo-title-count').css('color', '#dc3232'); // Too short - red
             }
         });
 
@@ -900,13 +902,15 @@
             $('#seo-desc-count').text(len);
             updateSerpPreview();
             
-            // Visual feedback for length
-            if (len > 155) {
-                $('#seo-desc-count').css('color', '#dc3232');
-            } else if (len > 140) {
-                $('#seo-desc-count').css('color', '#f0b849');
+            // Visual feedback for length (optimal: 145-160 characters)
+            if (len > 160) {
+                $('#seo-desc-count').css('color', '#dc3232'); // Too long - red
+            } else if (len >= 145 && len <= 160) {
+                $('#seo-desc-count').css('color', '#46b450'); // Optimal - green
+            } else if (len >= 120) {
+                $('#seo-desc-count').css('color', '#f0b849'); // Slightly short - yellow
             } else {
-                $('#seo-desc-count').css('color', '');
+                $('#seo-desc-count').css('color', '#dc3232'); // Too short - red
             }
         });
 

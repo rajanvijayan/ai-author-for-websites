@@ -34,7 +34,7 @@ class Rankmath extends IntegrationBase {
 		'auto_generate_meta'          => true,
 		'generate_focus_keyword'      => true,
 		'generate_meta_desc'          => true,
-		'meta_desc_length'            => 155,
+		'meta_desc_length'            => 160,
 		'generate_secondary_keywords' => false,
 		'generate_og_meta'            => false,
 	);
@@ -311,17 +311,21 @@ class Rankmath extends IntegrationBase {
 			$prompt  = "Generate SEO metadata for the following blog post.\n\n";
 			$prompt .= "Title: {$title}\n\n";
 			$prompt .= "Content (excerpt): {$content_excerpt}\n\n";
-			$prompt .= "Generate the following:\n";
-			$prompt .= "1. Focus Keyword: A 2-4 word phrase that best represents the main topic\n";
-			$prompt .= "2. Meta Description: A compelling description under {$meta_desc_length} characters that includes the focus keyword\n";
-			$prompt .= "3. SEO Title: An optimized title under 60 characters that includes the focus keyword\n";
+			$prompt .= "Generate the following with EXACT length requirements:\n\n";
+			$prompt .= "1. Focus Keyword: A 2-4 word phrase that best represents the main topic (e.g., 'productivity tips', 'healthy recipes', 'digital marketing strategies')\n\n";
+			$prompt .= "2. Meta Description: MUST be between 145-{$meta_desc_length} characters. This is the snippet shown in Google search results. ";
+			$prompt .= 'Make it compelling with a call-to-action. Include the focus keyword naturally. ';
+			$prompt .= "Example length: 'Discover 10 proven productivity tips that will transform your workday. Learn how to manage time effectively and achieve more in less time.'\n\n";
+			$prompt .= '3. SEO Title: MUST be between 50-60 characters. Include the focus keyword near the beginning. ';
+			$prompt .= "Make it click-worthy. Example: '10 Productivity Tips to Transform Your Workday | Guide'\n\n";
 
 			if ( $generate_secondary ) {
-				$prompt .= "4. Secondary Keywords: 3-5 related keywords/phrases separated by commas\n";
+				$prompt .= "4. Secondary Keywords: 3-5 related keywords/phrases that support the main topic\n\n";
 			}
 
-			$prompt .= "\nReturn the response in this exact JSON format:\n";
-			$prompt .= '{"focus_keyword": "your keyword", "meta_description": "your description", "seo_title": "your title"';
+			$prompt .= "IMPORTANT: Meta description must be at least 145 characters and SEO title must be at least 50 characters.\n\n";
+			$prompt .= "Return the response in this exact JSON format:\n";
+			$prompt .= '{"focus_keyword": "your keyword", "meta_description": "your 145-155 character description here", "seo_title": "your 50-60 character title here"';
 
 			if ( $generate_secondary ) {
 				$prompt .= ', "secondary_keywords": ["keyword1", "keyword2", "keyword3"]';

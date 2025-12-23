@@ -213,9 +213,10 @@ $categories = get_categories( array( 'hide_empty' => false ) );
 							<input type="text" 
 									id="seo-title" 
 									class="large-text" 
-									placeholder="<?php esc_attr_e( 'Optimized title for search engines (max 60 chars)', 'ai-author-for-websites' ); ?>">
+									placeholder="<?php esc_attr_e( 'Optimized title for search engines (50-60 chars recommended)', 'ai-author-for-websites' ); ?>">
 							<p class="description">
 								<span id="seo-title-count">0</span>/60 <?php esc_html_e( 'characters', 'ai-author-for-websites' ); ?>
+								<span class="aiauthor-seo-hint"><?php esc_html_e( '(Recommended: 50-60)', 'ai-author-for-websites' ); ?></span>
 							</p>
 						</div>
 
@@ -224,9 +225,10 @@ $categories = get_categories( array( 'hide_empty' => false ) );
 							<textarea id="seo-meta-desc" 
 									class="large-text" 
 									rows="3"
-									placeholder="<?php esc_attr_e( 'Compelling description for search results (max 155 chars)', 'ai-author-for-websites' ); ?>"></textarea>
+									placeholder="<?php esc_attr_e( 'Compelling description for search results (145-160 chars recommended)', 'ai-author-for-websites' ); ?>"></textarea>
 							<p class="description">
-								<span id="seo-desc-count">0</span>/155 <?php esc_html_e( 'characters', 'ai-author-for-websites' ); ?>
+								<span id="seo-desc-count">0</span>/160 <?php esc_html_e( 'characters', 'ai-author-for-websites' ); ?>
+								<span class="aiauthor-seo-hint"><?php esc_html_e( '(Recommended: 145-160)', 'ai-author-for-websites' ); ?></span>
 							</p>
 						</div>
 
