@@ -9,11 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-use AIAuthor\Core\Plugin;
-use AIAuthor\Knowledge\Manager as KnowledgeManager;
-
-$settings          = Plugin::get_settings();
-$knowledge_manager = new KnowledgeManager();
+$settings          = \AIAuthor\Core\Plugin::get_settings();
+$knowledge_manager = new \AIAuthor\Knowledge\Manager();
 $kb                = $knowledge_manager->get_knowledge_base();
 $summary           = $kb->getSummary();
 $has_api_key       = ! empty( $settings['api_key'] );
