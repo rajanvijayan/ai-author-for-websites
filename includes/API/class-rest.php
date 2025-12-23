@@ -580,11 +580,13 @@ class REST {
 	 * @return \WP_REST_Response The response.
 	 */
 	public function save_draft( $request ) {
-		$title      = sanitize_text_field( $request->get_param( 'title' ) );
-		$content    = wp_kses_post( $request->get_param( 'content' ) );
-		$author_id  = absint( $request->get_param( 'author_id' ) ) ?: get_current_user_id();
-		$categories = $request->get_param( 'categories' );
-		$tags       = $request->get_param( 'tags' );
+		$title         = sanitize_text_field( $request->get_param( 'title' ) );
+		$content       = wp_kses_post( $request->get_param( 'content' ) );
+		$author_id     = absint( $request->get_param( 'author_id' ) ) ?: get_current_user_id();
+		$categories    = $request->get_param( 'categories' );
+		$tags          = $request->get_param( 'tags' );
+		$status        = sanitize_text_field( $request->get_param( 'status' ) ) ?: 'draft';
+		$schedule_date = sanitize_text_field( $request->get_param( 'schedule_date' ) );
 
 		if ( empty( $title ) || empty( $content ) ) {
 			return new \WP_REST_Response(
@@ -596,13 +598,25 @@ class REST {
 			);
 		}
 
+		// Validate status.
+		$allowed_statuses = [ 'draft', 'publish', 'future' ];
+		if ( ! in_array( $status, $allowed_statuses, true ) ) {
+			$status = 'draft';
+		}
+
 		$post_data = [
 			'post_title'   => $title,
 			'post_content' => $content,
-			'post_status'  => 'draft',
+			'post_status'  => $status,
 			'post_type'    => 'post',
 			'post_author'  => $author_id,
 		];
+
+		// Handle scheduled posts.
+		if ( 'future' === $status && ! empty( $schedule_date ) ) {
+			$post_data['post_date']     = $schedule_date;
+			$post_data['post_date_gmt'] = get_gmt_from_date( $schedule_date );
+		}
 
 		$post_id = wp_insert_post( $post_data );
 
@@ -641,12 +655,26 @@ class REST {
 			wp_set_post_tags( $post_id, $tag_names );
 		}
 
+		// Prepare response message.
+		switch ( $status ) {
+			case 'publish':
+				$message = __( 'Post published successfully!', 'ai-author-for-websites' );
+				break;
+			case 'future':
+				$message = __( 'Post scheduled successfully!', 'ai-author-for-websites' );
+				break;
+			default:
+				$message = __( 'Post saved as draft!', 'ai-author-for-websites' );
+		}
+
 		return new \WP_REST_Response(
 			[
 				'success'  => true,
 				'post_id'  => $post_id,
+				'status'   => $status,
 				'edit_url' => get_edit_post_link( $post_id, 'raw' ),
-				'message'  => __( 'Post saved as draft!', 'ai-author-for-websites' ),
+				'view_url' => get_permalink( $post_id ),
+				'message'  => $message,
 			],
 			200
 		);
