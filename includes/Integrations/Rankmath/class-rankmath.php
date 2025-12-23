@@ -446,6 +446,16 @@ class Rankmath extends IntegrationBase {
 			return;
 		}
 
+		// Check if SEO data already exists - don't overwrite existing data.
+		$existing_focus_kw  = get_post_meta( $post_id, 'rank_math_focus_keyword', true );
+		$existing_meta_desc = get_post_meta( $post_id, 'rank_math_description', true );
+		$existing_seo_title = get_post_meta( $post_id, 'rank_math_title', true );
+
+		if ( ! empty( $existing_focus_kw ) || ! empty( $existing_meta_desc ) || ! empty( $existing_seo_title ) ) {
+			$this->log_activity( 'skipped', 'SEO data already exists for this post, not overwriting' );
+			return;
+		}
+
 		// Generate SEO data.
 		$seo_data = $this->generate_seo_data( $title, $content );
 

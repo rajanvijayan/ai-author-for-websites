@@ -414,6 +414,16 @@ class YoastSEO extends IntegrationBase {
 			return;
 		}
 
+		// Check if SEO data already exists - don't overwrite existing data.
+		$existing_focus_kw  = get_post_meta( $post_id, '_yoast_wpseo_focuskw', true );
+		$existing_meta_desc = get_post_meta( $post_id, '_yoast_wpseo_metadesc', true );
+		$existing_seo_title = get_post_meta( $post_id, '_yoast_wpseo_title', true );
+
+		if ( ! empty( $existing_focus_kw ) || ! empty( $existing_meta_desc ) || ! empty( $existing_seo_title ) ) {
+			$this->log_activity( 'skipped', 'SEO data already exists for this post, not overwriting' );
+			return;
+		}
+
 		// Generate SEO data.
 		$seo_data = $this->generate_seo_data( $title, $content );
 
