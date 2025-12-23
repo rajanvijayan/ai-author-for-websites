@@ -734,7 +734,13 @@ class REST {
 	 * @return bool True if applied successfully.
 	 */
 	private function apply_seo_data( int $post_id, array $seo_data ): bool {
-		$focus_keyword    = isset( $seo_data['focus_keyword'] ) ? sanitize_text_field( $seo_data['focus_keyword'] ) : '';
+		// Handle both naming conventions: focus_keyword (Rank Math) and focus_keyphrase (Yoast).
+		$focus_keyword = '';
+		if ( ! empty( $seo_data['focus_keyword'] ) ) {
+			$focus_keyword = sanitize_text_field( $seo_data['focus_keyword'] );
+		} elseif ( ! empty( $seo_data['focus_keyphrase'] ) ) {
+			$focus_keyword = sanitize_text_field( $seo_data['focus_keyphrase'] );
+		}
 		$seo_title        = isset( $seo_data['seo_title'] ) ? sanitize_text_field( $seo_data['seo_title'] ) : '';
 		$meta_description = isset( $seo_data['meta_description'] ) ? sanitize_textarea_field( $seo_data['meta_description'] ) : '';
 
