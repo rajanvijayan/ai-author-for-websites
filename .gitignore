@@ -57,3 +57,5 @@ package-lock.json
 *.cache
 .php-cs-fixer.cache
 
+# Keys
+key.ai
