@@ -670,6 +670,12 @@ class REST {
 			wp_set_post_tags( $post_id, $tag_names );
 		}
 
+		// Handle SEO data if provided.
+		$seo_data = $request->get_param( 'seo_data' );
+		if ( ! empty( $seo_data ) && is_array( $seo_data ) ) {
+			$this->apply_seo_data( $post_id, $seo_data );
+		}
+
 		// Trigger post created action for integrations (e.g., Pixabay featured image).
 		do_action( 'aiauthor_post_created', $post_id, $title, $content );
 
@@ -716,5 +722,61 @@ class REST {
 			),
 			200
 		);
+	}
+
+	/**
+	 * Apply SEO data to a post.
+	 *
+	 * Detects which SEO plugin is active and applies the data accordingly.
+	 *
+	 * @param int   $post_id  Post ID.
+	 * @param array $seo_data SEO data to apply.
+	 * @return bool True if applied successfully.
+	 */
+	private function apply_seo_data( int $post_id, array $seo_data ): bool {
+		$focus_keyword   = isset( $seo_data['focus_keyword'] ) ? sanitize_text_field( $seo_data['focus_keyword'] ) : '';
+		$seo_title       = isset( $seo_data['seo_title'] ) ? sanitize_text_field( $seo_data['seo_title'] ) : '';
+		$meta_description = isset( $seo_data['meta_description'] ) ? sanitize_textarea_field( $seo_data['meta_description'] ) : '';
+
+		// Skip if no SEO data provided.
+		if ( empty( $focus_keyword ) && empty( $seo_title ) && empty( $meta_description ) ) {
+			return false;
+		}
+
+		$applied = false;
+
+		// Check for Yoast SEO.
+		if ( defined( 'WPSEO_VERSION' ) || class_exists( 'WPSEO_Meta' ) ) {
+			if ( ! empty( $focus_keyword ) ) {
+				update_post_meta( $post_id, '_yoast_wpseo_focuskw', $focus_keyword );
+				$applied = true;
+			}
+			if ( ! empty( $meta_description ) ) {
+				update_post_meta( $post_id, '_yoast_wpseo_metadesc', $meta_description );
+				$applied = true;
+			}
+			if ( ! empty( $seo_title ) ) {
+				update_post_meta( $post_id, '_yoast_wpseo_title', $seo_title );
+				$applied = true;
+			}
+		}
+
+		// Check for Rank Math.
+		if ( defined( 'RANK_MATH_VERSION' ) || class_exists( 'RankMath' ) ) {
+			if ( ! empty( $focus_keyword ) ) {
+				update_post_meta( $post_id, 'rank_math_focus_keyword', $focus_keyword );
+				$applied = true;
+			}
+			if ( ! empty( $meta_description ) ) {
+				update_post_meta( $post_id, 'rank_math_description', $meta_description );
+				$applied = true;
+			}
+			if ( ! empty( $seo_title ) ) {
+				update_post_meta( $post_id, 'rank_math_title', $seo_title );
+				$applied = true;
+			}
+		}
+
+		return $applied;
 	}
 }
