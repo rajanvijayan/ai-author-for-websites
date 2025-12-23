@@ -197,12 +197,18 @@
         // Gather categories
         var categories = [];
         $('#category-selector input[type="checkbox"]:checked').each(function() {
-            categories.push($(this).val());
-        });
-
-        // Add new categories
-        $('.aiauthor-new-category').each(function() {
-            categories.push($(this).data('name'));
+            var val = $(this).val();
+            // For existing categories, use the ID
+            // For new categories, use the data-name from the parent label
+            if (val.toString().indexOf('new-') === 0) {
+                // This is a new category, use the name instead
+                var catName = $(this).closest('.aiauthor-new-category').data('name');
+                if (catName) {
+                    categories.push(catName);
+                }
+            } else {
+                categories.push(val);
+            }
         });
 
         var $btn = $('#save-draft-btn');
