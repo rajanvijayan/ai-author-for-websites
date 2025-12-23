@@ -70,6 +70,18 @@ class Manager {
 		// Load Auto Scheduler integration.
 		require_once AIAUTHOR_PLUGIN_DIR . 'includes/Integrations/AutoScheduler/class-auto-scheduler.php';
 		$this->register( new AutoScheduler\AutoScheduler() );
+
+		// Load Pixabay integration.
+		require_once AIAUTHOR_PLUGIN_DIR . 'includes/Integrations/Pixabay/class-pixabay.php';
+		$this->register( new Pixabay\Pixabay() );
+
+		// Load Facebook integration.
+		require_once AIAUTHOR_PLUGIN_DIR . 'includes/Integrations/Facebook/class-facebook.php';
+		$this->register( new Facebook\Facebook() );
+
+		// Load Twitter integration.
+		require_once AIAUTHOR_PLUGIN_DIR . 'includes/Integrations/Twitter/class-twitter.php';
+		$this->register( new Twitter\Twitter() );
 	}
 
 	/**
@@ -211,6 +223,10 @@ class Manager {
 			'publishing' => array(
 				'label' => __( 'Publishing', 'ai-author-for-websites' ),
 				'icon'  => 'dashicons-share',
+			),
+			'media'      => array(
+				'label' => __( 'Media', 'ai-author-for-websites' ),
+				'icon'  => 'dashicons-format-image',
 			),
 			'analytics'  => array(
 				'label' => __( 'Analytics', 'ai-author-for-websites' ),
