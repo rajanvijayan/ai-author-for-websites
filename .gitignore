@@ -1,0 +1,59 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Build files
+/build/
+/dist/
+
+# IDE and Editor
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+*.swp
+*.swo
+*~
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# WordPress
+wp-config.php
+wp-content/uploads/
+wp-content/upgrade/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+/coverage/
+/coverage-report/
+.phpunit.result.cache
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Composer
+composer.lock
+
+# Package locks (keep composer.lock but ignore npm lock)
+package-lock.json
+
+# Cache
+*.cache
+.php-cs-fixer.cache
+
