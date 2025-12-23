@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2024-12-23
+
+### Added
+- Yoast SEO integration for AI-generated SEO metadata
+  - Auto-generate focus keyphrase, meta description, and SEO title
+  - Settings page with enable/disable toggle and configuration options
+  - Test generation feature to preview SEO suggestions
+  - Activity logging for debugging
+- Rank Math SEO integration for AI-generated SEO metadata
+  - Auto-generate focus keyword, secondary keywords, meta description, and SEO title
+  - Settings page with enable/disable toggle and configuration options
+  - Support for secondary keywords (Rank Math Pro feature)
+  - Test generation feature to preview SEO suggestions
+  - Activity logging for debugging
+- SEO section in Generate Post page
+  - Focus keyword input field
+  - SEO title field with character counter (60 char limit)
+  - Meta description field with character counter (155 char limit)
+  - Live Google SERP preview
+  - One-click "Generate SEO" button for AI-powered suggestions
+- REST API endpoints for SEO data generation and application
+- SEO data is automatically saved when publishing posts
+- Detection of active SEO plugins (Yoast SEO or Rank Math)
+
+### Changed
+- Updated REST API to accept and apply SEO metadata when saving posts
+
 ## [1.0.0] - 2024-12-23
 
 ### Added

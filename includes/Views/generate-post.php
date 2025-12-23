@@ -162,6 +162,88 @@ $categories = get_categories( array( 'hide_empty' => false ) );
 				</div>
 				<div id="result-content" class="aiauthor-result-content"></div>
 
+				<!-- SEO Section -->
+				<?php
+				$seo_integrations_manager = \AIAuthor\Integrations\Manager::get_instance();
+				$yoast_seo_integration    = $seo_integrations_manager->get( 'yoast-seo' );
+				$rankmath_seo_integration = $seo_integrations_manager->get( 'rankmath' );
+				$show_seo_section         = ( $yoast_seo_integration && $yoast_seo_integration->is_enabled() ) || ( $rankmath_seo_integration && $rankmath_seo_integration->is_enabled() );
+				$active_seo_plugin        = '';
+				if ( $yoast_seo_integration && $yoast_seo_integration->is_yoast_active() ) {
+					$active_seo_plugin = 'yoast';
+				} elseif ( $rankmath_seo_integration && $rankmath_seo_integration->is_rankmath_active() ) {
+					$active_seo_plugin = 'rankmath';
+				}
+				?>
+				<?php if ( $show_seo_section || $active_seo_plugin ) : ?>
+				<div class="aiauthor-seo-section">
+					<div class="aiauthor-seo-header">
+						<h3>
+							<span class="dashicons dashicons-search" style="color: #0073aa;"></span>
+							<?php esc_html_e( 'SEO Settings', 'ai-author-for-websites' ); ?>
+							<?php if ( $active_seo_plugin ) : ?>
+								<span class="aiauthor-seo-badge">
+									<?php echo 'yoast' === $active_seo_plugin ? 'Yoast SEO' : 'Rank Math'; ?>
+								</span>
+							<?php endif; ?>
+						</h3>
+						<button type="button" id="generate-seo-btn" class="button button-small">
+							<span class="dashicons dashicons-admin-generic"></span>
+							<span><?php esc_html_e( 'Generate SEO', 'ai-author-for-websites' ); ?></span>
+						</button>
+					</div>
+
+					<div id="seo-loading" class="aiauthor-seo-loading" style="display: none;">
+						<span class="spinner is-active"></span>
+						<span><?php esc_html_e( 'Generating SEO data...', 'ai-author-for-websites' ); ?></span>
+					</div>
+
+					<div id="seo-fields" class="aiauthor-seo-fields">
+						<div class="aiauthor-form-row">
+							<label for="seo-focus-keyword"><?php esc_html_e( 'Focus Keyword', 'ai-author-for-websites' ); ?></label>
+							<input type="text" 
+									id="seo-focus-keyword" 
+									class="large-text" 
+									placeholder="<?php esc_attr_e( 'e.g., productivity tips', 'ai-author-for-websites' ); ?>">
+							<p class="description"><?php esc_html_e( 'The main keyword you want this post to rank for.', 'ai-author-for-websites' ); ?></p>
+						</div>
+
+						<div class="aiauthor-form-row">
+							<label for="seo-title"><?php esc_html_e( 'SEO Title', 'ai-author-for-websites' ); ?></label>
+							<input type="text" 
+									id="seo-title" 
+									class="large-text" 
+									placeholder="<?php esc_attr_e( 'Optimized title for search engines (50-60 chars recommended)', 'ai-author-for-websites' ); ?>">
+							<p class="description">
+								<span id="seo-title-count">0</span>/60 <?php esc_html_e( 'characters', 'ai-author-for-websites' ); ?>
+								<span class="aiauthor-seo-hint"><?php esc_html_e( '(Recommended: 50-60)', 'ai-author-for-websites' ); ?></span>
+							</p>
+						</div>
+
+						<div class="aiauthor-form-row">
+							<label for="seo-meta-desc"><?php esc_html_e( 'Meta Description', 'ai-author-for-websites' ); ?></label>
+							<textarea id="seo-meta-desc" 
+									class="large-text" 
+									rows="3"
+									placeholder="<?php esc_attr_e( 'Compelling description for search results (145-160 chars recommended)', 'ai-author-for-websites' ); ?>"></textarea>
+							<p class="description">
+								<span id="seo-desc-count">0</span>/160 <?php esc_html_e( 'characters', 'ai-author-for-websites' ); ?>
+								<span class="aiauthor-seo-hint"><?php esc_html_e( '(Recommended: 145-160)', 'ai-author-for-websites' ); ?></span>
+							</p>
+						</div>
+
+						<div class="aiauthor-seo-preview">
+							<p class="aiauthor-seo-preview-label"><?php esc_html_e( 'Search Preview:', 'ai-author-for-websites' ); ?></p>
+							<div class="aiauthor-serp-preview">
+								<div class="aiauthor-serp-title" id="serp-title"><?php esc_html_e( 'Your SEO Title Will Appear Here', 'ai-author-for-websites' ); ?></div>
+								<div class="aiauthor-serp-url"><?php echo esc_url( home_url( '/your-post-slug/' ) ); ?></div>
+								<div class="aiauthor-serp-desc" id="serp-desc"><?php esc_html_e( 'Your meta description will appear here. Make it compelling to improve click-through rates from search results.', 'ai-author-for-websites' ); ?></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<?php endif; ?>
+
 				<!-- Category & Tags Section -->
 				<div class="aiauthor-taxonomy-section">
 					<div class="aiauthor-taxonomy-header">

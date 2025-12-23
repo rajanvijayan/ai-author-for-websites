@@ -4,7 +4,7 @@ Tags: ai, content, blog, writer, generator, groq, gemini, llama, assistant
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 8.0
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -136,6 +136,15 @@ Yes! The plugin includes integrations for:
 
 == Changelog ==
 
+= 1.1.0 =
+* Added Yoast SEO integration for AI-generated SEO metadata
+* Added Rank Math SEO integration for AI-generated SEO metadata
+* Added SEO section in Generate Post page with focus keyword, SEO title, and meta description fields
+* Added live Google SERP preview in Generate Post page
+* Added character counters for SEO title and meta description
+* SEO data is automatically saved when publishing posts
+* Automatic detection of active SEO plugins (Yoast SEO or Rank Math)
+
 = 1.0.0 =
 * Initial release
 * AI content generation with Groq, Gemini, and Meta Llama support
@@ -147,6 +156,9 @@ Yes! The plugin includes integrations for:
 * GitHub-based automatic updates
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+New SEO integrations! Automatically generate focus keywords, meta descriptions, and SEO titles using AI. Works with both Yoast SEO and Rank Math.
 
 = 1.0.0 =
 Initial release of AI Author for Websites. Train your AI, generate content, and automate your blog!

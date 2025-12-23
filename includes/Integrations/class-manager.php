@@ -82,6 +82,14 @@ class Manager {
 		// Load Twitter integration.
 		require_once AIAUTHOR_PLUGIN_DIR . 'includes/Integrations/Twitter/class-twitter.php';
 		$this->register( new Twitter\Twitter() );
+
+		// Load Yoast SEO integration.
+		require_once AIAUTHOR_PLUGIN_DIR . 'includes/Integrations/YoastSEO/class-yoast-seo.php';
+		$this->register( new YoastSEO\YoastSEO() );
+
+		// Load Rankmath SEO integration.
+		require_once AIAUTHOR_PLUGIN_DIR . 'includes/Integrations/Rankmath/class-rankmath.php';
+		$this->register( new Rankmath\Rankmath() );
 	}
 
 	/**

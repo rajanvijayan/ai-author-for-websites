@@ -52,9 +52,13 @@ if ( isset( $_GET['action'], $_GET['integration'], $_GET['_wpnonce'] ) ) {
 	<div class="aiauthor-integrations-grid">
 		<?php foreach ( $integrations as $integration ) : ?>
 			<?php
-			$is_enabled    = $integration->is_enabled();
-			$toggle_action = $is_enabled ? 'disable' : 'enable';
-			$toggle_url    = wp_nonce_url(
+			$integration_data  = $integration->to_array();
+			$is_enabled        = $integration->is_enabled();
+			$plugin_active     = $integration_data['plugin_active'] ?? true;
+			$plugin_required   = $integration_data['plugin_required'] ?? '';
+			$availability_note = $integration_data['availability_note'] ?? '';
+			$toggle_action     = $is_enabled ? 'disable' : 'enable';
+			$toggle_url        = wp_nonce_url(
 				add_query_arg(
 					array(
 						'action'      => $toggle_action,
@@ -64,8 +68,15 @@ if ( isset( $_GET['action'], $_GET['integration'], $_GET['_wpnonce'] ) ) {
 				),
 				'aiauthor_integration_toggle'
 			);
+			$card_classes      = array( 'aiauthor-integration-card' );
+			if ( $is_enabled ) {
+				$card_classes[] = 'is-enabled';
+			}
+			if ( ! $plugin_active ) {
+				$card_classes[] = 'is-unavailable';
+			}
 			?>
-			<div class="aiauthor-integration-card <?php echo $is_enabled ? 'is-enabled' : ''; ?>">
+			<div class="<?php echo esc_attr( implode( ' ', $card_classes ) ); ?>">
 				<div class="aiauthor-integration-header">
 					<div class="aiauthor-integration-icon">
 						<span class="dashicons <?php echo esc_attr( $integration->get_icon() ); ?>"></span>
@@ -80,12 +91,20 @@ if ( isset( $_GET['action'], $_GET['integration'], $_GET['_wpnonce'] ) ) {
 								<?php esc_html_e( 'Built-in', 'ai-author-for-websites' ); ?>
 							</span>
 						<?php endif; ?>
+						<?php if ( ! $plugin_active && $plugin_required ) : ?>
+							<span class="aiauthor-badge aiauthor-badge-unavailable">
+								<?php esc_html_e( 'Plugin Required', 'ai-author-for-websites' ); ?>
+							</span>
+						<?php endif; ?>
 					</div>
 					<div class="aiauthor-integration-toggle">
-						<label class="aiauthor-switch">
+						<label class="aiauthor-switch <?php echo ! $plugin_active ? 'aiauthor-switch-disabled' : ''; ?>">
 							<input type="checkbox" 
 									<?php checked( $is_enabled ); ?>
-									onchange="window.location.href='<?php echo esc_url( $toggle_url ); ?>'">
+									<?php disabled( ! $plugin_active ); ?>
+									<?php if ( $plugin_active ) : ?>
+									onchange="window.location.href='<?php echo esc_url( $toggle_url ); ?>'"
+									<?php endif; ?>>
 							<span class="slider"></span>
 						</label>
 					</div>
@@ -93,6 +112,13 @@ if ( isset( $_GET['action'], $_GET['integration'], $_GET['_wpnonce'] ) ) {
 
 				<div class="aiauthor-integration-body">
 					<p><?php echo esc_html( $integration->get_description() ); ?></p>
+					
+					<?php if ( ! $plugin_active && $availability_note ) : ?>
+						<p class="aiauthor-integration-notice">
+							<span class="dashicons dashicons-warning"></span>
+							<?php echo esc_html( $availability_note ); ?>
+						</p>
+					<?php endif; ?>
 					
 					<div class="aiauthor-integration-details">
 						<span class="aiauthor-integration-author">
@@ -113,7 +139,8 @@ if ( isset( $_GET['action'], $_GET['integration'], $_GET['_wpnonce'] ) ) {
 				<div class="aiauthor-integration-footer">
 					<?php if ( $integration->has_settings_page() ) : ?>
 						<a href="<?php echo esc_url( admin_url( 'admin.php?page=ai-author-integrations&integration=' . $integration->get_id() ) ); ?>" 
-							class="button <?php echo $is_enabled ? 'button-primary' : ''; ?>">
+							class="button <?php echo $is_enabled ? 'button-primary' : ''; ?>"
+							<?php disabled( ! $plugin_active ); ?>>
 							<span class="dashicons dashicons-admin-generic"></span>
 							<?php esc_html_e( 'Configure', 'ai-author-for-websites' ); ?>
 						</a>

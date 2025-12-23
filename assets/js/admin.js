@@ -23,6 +23,7 @@
         initTaxonomyHandlers();
         initPublishDropdown();
         initConfirmModal();
+        initSEOHandlers();
     });
 
     // Expose showToast globally for use in inline scripts
@@ -466,6 +467,14 @@
             data.schedule_date = scheduleDate;
         }
 
+        // Include SEO data if available
+        if (typeof window.aiauthorGetSEOData === 'function') {
+            var seoData = window.aiauthorGetSEOData();
+            if (seoData.focus_keyword || seoData.seo_title || seoData.meta_description) {
+                data.seo_data = seoData;
+            }
+        }
+
         $.ajax({
             url: aiauthorAdmin.restUrl + 'save-draft',
             method: 'POST',
@@ -864,5 +873,127 @@
             }
         });
     }
+
+    /* ==========================================================================
+       SEO Handlers
+       ========================================================================== */
+    
+    function initSEOHandlers() {
+        // Character counters for SEO fields
+        $('#seo-title').on('input', function() {
+            var len = $(this).val().length;
+            $('#seo-title-count').text(len);
+            updateSerpPreview();
+            
+            // Visual feedback for length (optimal: 50-60 characters)
+            if (len > 60) {
+                $('#seo-title-count').css('color', '#dc3232'); // Too long - red
+            } else if (len >= 50 && len <= 60) {
+                $('#seo-title-count').css('color', '#46b450'); // Optimal - green
+            } else if (len >= 40) {
+                $('#seo-title-count').css('color', '#f0b849'); // Slightly short - yellow
+            } else {
+                $('#seo-title-count').css('color', '#dc3232'); // Too short - red
+            }
+        });
+
+        $('#seo-meta-desc').on('input', function() {
+            var len = $(this).val().length;
+            $('#seo-desc-count').text(len);
+            updateSerpPreview();
+            
+            // Visual feedback for length (optimal: 145-160 characters)
+            if (len > 160) {
+                $('#seo-desc-count').css('color', '#dc3232'); // Too long - red
+            } else if (len >= 145 && len <= 160) {
+                $('#seo-desc-count').css('color', '#46b450'); // Optimal - green
+            } else if (len >= 120) {
+                $('#seo-desc-count').css('color', '#f0b849'); // Slightly short - yellow
+            } else {
+                $('#seo-desc-count').css('color', '#dc3232'); // Too short - red
+            }
+        });
+
+        // Generate SEO button
+        $('#generate-seo-btn').on('click', function() {
+            generateSEOData();
+        });
+    }
+
+    function updateSerpPreview() {
+        var seoTitle = $('#seo-title').val() || $('#result-title').val() || 'Your SEO Title Will Appear Here';
+        var metaDesc = $('#seo-meta-desc').val() || 'Your meta description will appear here. Make it compelling to improve click-through rates from search results.';
+        
+        $('#serp-title').text(seoTitle);
+        $('#serp-desc').text(metaDesc);
+    }
+
+    function generateSEOData() {
+        var title = $('#result-title').val();
+        var content = $('#result-content').text();
+
+        if (!title && !content) {
+            showToast('warning', 'No Content', 'Generate content first to get SEO suggestions.');
+            return;
+        }
+
+        var $btn = $('#generate-seo-btn');
+        var $loading = $('#seo-loading');
+        var $fields = $('#seo-fields');
+
+        $btn.prop('disabled', true).find('.dashicons').removeClass('dashicons-admin-generic').addClass('dashicons-update spin');
+        $loading.show();
+
+        // Use general SEO endpoint that works without requiring integration
+        $.ajax({
+            url: aiauthorAdmin.restUrl + 'generate-seo',
+            method: 'POST',
+            headers: {
+                'X-WP-Nonce': aiauthorAdmin.nonce
+            },
+            data: {
+                title: title,
+                content: content
+            },
+            success: function(response) {
+                $btn.prop('disabled', false).find('.dashicons').removeClass('dashicons-update spin').addClass('dashicons-admin-generic');
+                $loading.hide();
+
+                if (response.success && response.data) {
+                    // Populate SEO fields - handle both naming conventions
+                    var focusKey = response.data.focus_keyword || response.data.focus_keyphrase || '';
+                    var metaDesc = response.data.meta_description || '';
+                    var seoTitle = response.data.seo_title || '';
+
+                    $('#seo-focus-keyword').val(focusKey);
+                    $('#seo-title').val(seoTitle).trigger('input');
+                    $('#seo-meta-desc').val(metaDesc).trigger('input');
+
+                    showToast('success', 'SEO Generated', 'SEO metadata has been generated successfully.');
+                } else {
+                    showToast('error', 'SEO Generation Failed', response.message || 'Could not generate SEO data.');
+                }
+            },
+            error: function(xhr) {
+                $btn.prop('disabled', false).find('.dashicons').removeClass('dashicons-update spin').addClass('dashicons-admin-generic');
+                $loading.hide();
+                
+                var errorMsg = 'Could not connect to SEO generation service.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                showToast('error', 'SEO Generation Failed', errorMsg);
+            }
+        });
+    }
+
+    // Store SEO data for saving
+    window.aiauthorGetSEOData = function() {
+        return {
+            focus_keyword: $('#seo-focus-keyword').val() || '',
+            seo_title: $('#seo-title').val() || '',
+            meta_description: $('#seo-meta-desc').val() || ''
+        };
+    };
 
 })(jQuery);
