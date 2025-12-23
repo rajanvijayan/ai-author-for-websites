@@ -81,7 +81,8 @@ $categories = get_categories( [ 'hide_empty' => false ] );
 						min="100" 
 						max="5000" 
 						step="100"
-						class="regular-text" style="width: 120px;">
+						class="regular-text"
+						style="width: 120px;">
 				<p class="description">
 					<?php esc_html_e( 'Target word count for the generated post.', 'ai-author-for-websites' ); ?>
 				</p>
