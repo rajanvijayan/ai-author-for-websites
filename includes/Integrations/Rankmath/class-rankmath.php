@@ -30,13 +30,13 @@ class Rankmath extends IntegrationBase {
 	 * @var array
 	 */
 	protected $default_settings = array(
-		'enabled'                 => false,
-		'auto_generate_meta'      => true,
-		'generate_focus_keyword'  => true,
-		'generate_meta_desc'      => true,
-		'meta_desc_length'        => 155,
+		'enabled'                     => false,
+		'auto_generate_meta'          => true,
+		'generate_focus_keyword'      => true,
+		'generate_meta_desc'          => true,
+		'meta_desc_length'            => 155,
 		'generate_secondary_keywords' => false,
-		'generate_og_meta'        => false,
+		'generate_og_meta'            => false,
 	);
 
 	/**
@@ -192,11 +192,11 @@ class Rankmath extends IntegrationBase {
 	 * @return \WP_REST_Response The response.
 	 */
 	public function rest_apply_seo_data( $request ): \WP_REST_Response {
-		$post_id             = absint( $request->get_param( 'post_id' ) );
-		$focus_keyword       = sanitize_text_field( $request->get_param( 'focus_keyword' ) );
-		$secondary_keywords  = $request->get_param( 'secondary_keywords' );
-		$meta_desc           = sanitize_textarea_field( $request->get_param( 'meta_description' ) );
-		$seo_title           = sanitize_text_field( $request->get_param( 'seo_title' ) );
+		$post_id            = absint( $request->get_param( 'post_id' ) );
+		$focus_keyword      = sanitize_text_field( $request->get_param( 'focus_keyword' ) );
+		$secondary_keywords = $request->get_param( 'secondary_keywords' );
+		$meta_desc          = sanitize_textarea_field( $request->get_param( 'meta_description' ) );
+		$seo_title          = sanitize_text_field( $request->get_param( 'seo_title' ) );
 
 		if ( empty( $post_id ) ) {
 			return new \WP_REST_Response(
@@ -208,12 +208,15 @@ class Rankmath extends IntegrationBase {
 			);
 		}
 
-		$result = $this->apply_seo_data_to_post( $post_id, array(
-			'focus_keyword'       => $focus_keyword,
-			'secondary_keywords'  => $secondary_keywords,
-			'meta_description'    => $meta_desc,
-			'seo_title'           => $seo_title,
-		) );
+		$result = $this->apply_seo_data_to_post(
+			$post_id,
+			array(
+				'focus_keyword'      => $focus_keyword,
+				'secondary_keywords' => $secondary_keywords,
+				'meta_description'   => $meta_desc,
+				'seo_title'          => $seo_title,
+			)
+		);
 
 		if ( ! $result ) {
 			return new \WP_REST_Response(
@@ -260,9 +263,9 @@ class Rankmath extends IntegrationBase {
 				)
 			);
 
-			$meta_desc_length      = $settings['meta_desc_length'] ?? 155;
-			$generate_secondary    = ! empty( $settings['generate_secondary_keywords'] );
-			$content_excerpt       = wp_trim_words( wp_strip_all_tags( $content ), 300 );
+			$meta_desc_length   = $settings['meta_desc_length'] ?? 155;
+			$generate_secondary = ! empty( $settings['generate_secondary_keywords'] );
+			$content_excerpt    = wp_trim_words( wp_strip_all_tags( $content ), 300 );
 
 			$prompt  = "Generate SEO metadata for the following blog post.\n\n";
 			$prompt .= "Title: {$title}\n\n";
@@ -460,4 +463,3 @@ class Rankmath extends IntegrationBase {
 		include AIAUTHOR_PLUGIN_DIR . 'includes/Views/rankmath.php';
 	}
 }
-

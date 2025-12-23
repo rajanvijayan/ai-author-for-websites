@@ -30,13 +30,13 @@ class YoastSEO extends IntegrationBase {
 	 * @var array
 	 */
 	protected $default_settings = array(
-		'enabled'                 => false,
-		'auto_generate_meta'      => true,
+		'enabled'                  => false,
+		'auto_generate_meta'       => true,
 		'generate_focus_keyphrase' => true,
-		'generate_meta_desc'      => true,
-		'meta_desc_length'        => 155,
-		'generate_og_title'       => false,
-		'generate_og_desc'        => false,
+		'generate_meta_desc'       => true,
+		'meta_desc_length'         => 155,
+		'generate_og_title'        => false,
+		'generate_og_desc'         => false,
 	);
 
 	/**
@@ -192,10 +192,10 @@ class YoastSEO extends IntegrationBase {
 	 * @return \WP_REST_Response The response.
 	 */
 	public function rest_apply_seo_data( $request ): \WP_REST_Response {
-		$post_id        = absint( $request->get_param( 'post_id' ) );
+		$post_id         = absint( $request->get_param( 'post_id' ) );
 		$focus_keyphrase = sanitize_text_field( $request->get_param( 'focus_keyphrase' ) );
-		$meta_desc      = sanitize_textarea_field( $request->get_param( 'meta_description' ) );
-		$seo_title      = sanitize_text_field( $request->get_param( 'seo_title' ) );
+		$meta_desc       = sanitize_textarea_field( $request->get_param( 'meta_description' ) );
+		$seo_title       = sanitize_text_field( $request->get_param( 'seo_title' ) );
 
 		if ( empty( $post_id ) ) {
 			return new \WP_REST_Response(
@@ -207,11 +207,14 @@ class YoastSEO extends IntegrationBase {
 			);
 		}
 
-		$result = $this->apply_seo_data_to_post( $post_id, array(
-			'focus_keyphrase'  => $focus_keyphrase,
-			'meta_description' => $meta_desc,
-			'seo_title'        => $seo_title,
-		) );
+		$result = $this->apply_seo_data_to_post(
+			$post_id,
+			array(
+				'focus_keyphrase'  => $focus_keyphrase,
+				'meta_description' => $meta_desc,
+				'seo_title'        => $seo_title,
+			)
+		);
 
 		if ( ! $result ) {
 			return new \WP_REST_Response(
@@ -428,4 +431,3 @@ class YoastSEO extends IntegrationBase {
 		include AIAUTHOR_PLUGIN_DIR . 'includes/Views/yoast-seo.php';
 	}
 }
-

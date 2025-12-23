@@ -734,8 +734,8 @@ class REST {
 	 * @return bool True if applied successfully.
 	 */
 	private function apply_seo_data( int $post_id, array $seo_data ): bool {
-		$focus_keyword   = isset( $seo_data['focus_keyword'] ) ? sanitize_text_field( $seo_data['focus_keyword'] ) : '';
-		$seo_title       = isset( $seo_data['seo_title'] ) ? sanitize_text_field( $seo_data['seo_title'] ) : '';
+		$focus_keyword    = isset( $seo_data['focus_keyword'] ) ? sanitize_text_field( $seo_data['focus_keyword'] ) : '';
+		$seo_title        = isset( $seo_data['seo_title'] ) ? sanitize_text_field( $seo_data['seo_title'] ) : '';
 		$meta_description = isset( $seo_data['meta_description'] ) ? sanitize_textarea_field( $seo_data['meta_description'] ) : '';
 
 		// Skip if no SEO data provided.

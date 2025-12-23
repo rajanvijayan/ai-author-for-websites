@@ -3,7 +3,7 @@
  * Plugin Name: AI Author for Websites
  * Plugin URI: https://github.com/rajanvijayan/ai-author-for-websites
  * Description: AI-powered blog post generator. Train the AI with your knowledge base and create high-quality content.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Rajan Vijayan
  * Author URI: https://rajanvijayan.com
  * License: GPL v2 or later
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'AIAUTHOR_VERSION', '1.0.0' );
+define( 'AIAUTHOR_VERSION', '1.1.0' );
 define( 'AIAUTHOR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AIAUTHOR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'AIAUTHOR_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
