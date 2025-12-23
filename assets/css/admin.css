@@ -111,6 +111,42 @@
 }
 
 /* ==========================================================================
+   Buttons with Icons - FIXED ALIGNMENT
+   ========================================================================== */
+.aiauthor-btn-with-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+}
+
+.aiauthor-btn-with-icon .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.aiauthor-btn-with-icon .btn-text {
+    line-height: 1;
+}
+
+.aiauthor-admin .button-hero.aiauthor-btn-with-icon {
+    padding: 12px 28px !important;
+    height: auto !important;
+    font-size: 15px !important;
+}
+
+.aiauthor-admin .button-hero.aiauthor-btn-with-icon .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+/* ==========================================================================
    Form Elements
    ========================================================================== */
 .aiauthor-form-row {
@@ -201,6 +237,24 @@
 
 .aiauthor-toggle-password {
     padding: 6px 10px !important;
+}
+
+/* AI Suggest Wrapper */
+.aiauthor-ai-suggest-wrapper {
+    margin-top: 8px;
+}
+
+.aiauthor-ai-suggest-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.aiauthor-ai-suggest-btn .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #f1c40f;
 }
 
 /* ==========================================================================
@@ -442,7 +496,7 @@
     border: 1px solid var(--aiauthor-border);
     border-radius: var(--aiauthor-radius);
     padding: 24px;
-    max-height: 500px;
+    max-height: 400px;
     overflow-y: auto;
     line-height: 1.7;
 }
@@ -470,10 +524,121 @@
 
 .aiauthor-result-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     margin-top: 20px;
     padding-top: 20px;
     border-top: 1px solid var(--aiauthor-border);
+}
+
+/* ==========================================================================
+   Taxonomy Section (Categories & Tags)
+   ========================================================================== */
+.aiauthor-taxonomy-section {
+    margin-top: 20px;
+    padding: 20px;
+    background: var(--aiauthor-bg);
+    border-radius: var(--aiauthor-radius);
+    border: 1px solid var(--aiauthor-border);
+}
+
+.aiauthor-taxonomy-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.aiauthor-taxonomy-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.aiauthor-taxonomy-header .button .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+.aiauthor-tag-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+    max-height: 150px;
+    overflow-y: auto;
+    padding: 8px;
+    background: white;
+    border: 1px solid var(--aiauthor-border);
+    border-radius: 4px;
+}
+
+.aiauthor-checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: var(--aiauthor-bg);
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.aiauthor-checkbox-label:hover {
+    background: var(--aiauthor-border);
+}
+
+.aiauthor-checkbox-label input[type="checkbox"]:checked + span,
+.aiauthor-checkbox-label:has(input:checked) {
+    background: var(--aiauthor-primary);
+    color: white;
+}
+
+.aiauthor-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+    min-height: 40px;
+    padding: 8px;
+    background: white;
+    border: 1px solid var(--aiauthor-border);
+    border-radius: 4px;
+}
+
+.aiauthor-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--aiauthor-primary);
+    color: white;
+    border-radius: 20px;
+    font-size: 12px;
+}
+
+.aiauthor-tag .remove-tag {
+    cursor: pointer;
+    opacity: 0.8;
+    font-weight: bold;
+}
+
+.aiauthor-tag .remove-tag:hover {
+    opacity: 1;
+}
+
+.aiauthor-add-new-taxonomy {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.aiauthor-add-new-taxonomy input {
+    flex: 1;
 }
 
 /* ==========================================================================
@@ -516,6 +681,18 @@
     gap: 16px;
 }
 
+.aiauthor-test-connection .button {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.aiauthor-test-connection .button .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
 .aiauthor-test-result {
     font-size: 13px;
 }
@@ -529,6 +706,130 @@
 }
 
 /* ==========================================================================
+   Modal
+   ========================================================================== */
+.aiauthor-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.aiauthor-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.aiauthor-modal-content {
+    position: relative;
+    background: white;
+    border-radius: var(--aiauthor-radius);
+    width: 100%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.aiauthor-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--aiauthor-border);
+    background: var(--aiauthor-bg);
+}
+
+.aiauthor-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.aiauthor-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--aiauthor-text-light);
+    padding: 0;
+    line-height: 1;
+}
+
+.aiauthor-modal-close:hover {
+    color: var(--aiauthor-danger);
+}
+
+.aiauthor-modal-body {
+    padding: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.aiauthor-modal-body label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.aiauthor-modal-body textarea {
+    width: 100%;
+    border-radius: 4px;
+    border: 1px solid var(--aiauthor-border);
+    padding: 10px;
+}
+
+.aiauthor-modal-loading {
+    text-align: center;
+    padding: 40px;
+}
+
+.aiauthor-modal-loading .spinner {
+    float: none;
+}
+
+.aiauthor-modal-error {
+    background: #fef2f2;
+    border: 1px solid var(--aiauthor-danger);
+    border-radius: 4px;
+    padding: 12px;
+    color: var(--aiauthor-danger);
+}
+
+.aiauthor-modal-result {
+    margin-top: 16px;
+}
+
+.aiauthor-modal-footer {
+    display: flex;
+    gap: 10px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--aiauthor-border);
+    background: var(--aiauthor-bg);
+    justify-content: flex-end;
+}
+
+.aiauthor-modal-footer .button {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.aiauthor-modal-footer .button .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+/* ==========================================================================
    Tables
    ========================================================================== */
 .aiauthor-admin .wp-list-table {
@@ -539,15 +840,6 @@
 .aiauthor-admin .wp-list-table th {
     background: var(--aiauthor-bg);
     font-weight: 600;
-}
-
-/* ==========================================================================
-   Buttons
-   ========================================================================== */
-.aiauthor-admin .button-hero {
-    padding: 12px 24px !important;
-    height: auto !important;
-    font-size: 15px !important;
 }
 
 /* ==========================================================================
@@ -574,5 +866,9 @@
     .aiauthor-result-actions {
         flex-wrap: wrap;
     }
-}
 
+    .aiauthor-modal-content {
+        margin: 20px;
+        max-width: calc(100% - 40px);
+    }
+}

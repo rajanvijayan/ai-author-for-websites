@@ -5,16 +5,21 @@
  * @package AI_Author_For_Websites
  */
 
+namespace AIAuthor\Admin;
+
+use AIAuthor\Core\Plugin;
+use AIAuthor\Knowledge\Manager as KnowledgeManager;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Class AIAUTHOR_Admin_Settings
+ * Class Settings
  *
  * Handles the admin settings page for the AI Author plugin.
  */
-class AIAUTHOR_Admin_Settings {
+class Settings {
 
 	/**
 	 * Current active tab.
@@ -32,11 +37,10 @@ class AIAUTHOR_Admin_Settings {
 			$this->save_settings();
 		}
 
-		// Get current tab from URL parameter.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Just reading tab parameter for display.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$this->active_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'general';
 
-		$settings = AI_Author_For_Websites::get_settings();
+		$settings = Plugin::get_settings();
 		?>
 		<div class="wrap aiauthor-admin">
 			<h1><?php esc_html_e( 'AI Author Settings', 'ai-author-for-websites' ); ?></h1>
@@ -70,6 +74,8 @@ class AIAUTHOR_Admin_Settings {
 							value="<?php esc_attr_e( 'Save Settings', 'ai-author-for-websites' ); ?>">
 				</p>
 			</form>
+
+			<?php $this->render_ai_suggestion_modal(); ?>
 		</div>
 		<?php
 	}
@@ -160,7 +166,7 @@ class AIAUTHOR_Admin_Settings {
 		<div class="aiauthor-card">
 			<h2><?php esc_html_e( 'Knowledge Base Status', 'ai-author-for-websites' ); ?></h2>
 			<?php
-			$knowledge_manager = new AIAUTHOR_Knowledge_Manager();
+			$knowledge_manager = new KnowledgeManager();
 			$kb                = $knowledge_manager->get_knowledge_base();
 			$summary           = $kb->getSummary();
 			?>
@@ -176,7 +182,7 @@ class AIAUTHOR_Admin_Settings {
 			</div>
 			<p>
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=ai-author-knowledge' ) ); ?>" class="button">
-					<span class="dashicons dashicons-book-alt" style="margin-top: 3px;"></span>
+					<span class="dashicons dashicons-book-alt"></span>
 					<?php esc_html_e( 'Manage Knowledge Base', 'ai-author-for-websites' ); ?>
 				</a>
 			</p>
@@ -276,7 +282,7 @@ class AIAUTHOR_Admin_Settings {
 
 			<div class="aiauthor-test-connection">
 				<button type="button" id="aiauthor-test-api" class="button">
-					<span class="dashicons dashicons-yes-alt" style="margin-top: 3px;"></span>
+					<span class="dashicons dashicons-yes-alt"></span>
 					<?php esc_html_e( 'Test Connection', 'ai-author-for-websites' ); ?>
 				</button>
 				<span id="aiauthor-test-result" class="aiauthor-test-result"></span>
@@ -305,6 +311,12 @@ class AIAUTHOR_Admin_Settings {
 									name="system_instruction" 
 									rows="5" 
 									class="large-text"><?php echo esc_textarea( $settings['system_instruction'] ?? '' ); ?></textarea>
+						<div class="aiauthor-ai-suggest-wrapper">
+							<button type="button" class="button aiauthor-ai-suggest-btn" data-target="system_instruction" data-type="system_instruction">
+								<span class="dashicons dashicons-lightbulb"></span>
+								<?php esc_html_e( 'AI Suggestion', 'ai-author-for-websites' ); ?>
+							</button>
+						</div>
 						<p class="description">
 							<?php esc_html_e( 'Instructions that define how the AI should write blog posts. Be specific about tone, style, and structure.', 'ai-author-for-websites' ); ?>
 						</p>
@@ -359,13 +371,63 @@ class AIAUTHOR_Admin_Settings {
 	}
 
 	/**
+	 * Render AI suggestion modal.
+	 */
+	private function render_ai_suggestion_modal() {
+		?>
+		<div id="aiauthor-suggest-modal" class="aiauthor-modal" style="display: none;">
+			<div class="aiauthor-modal-overlay"></div>
+			<div class="aiauthor-modal-content">
+				<div class="aiauthor-modal-header">
+					<h3><?php esc_html_e( 'AI Suggestion', 'ai-author-for-websites' ); ?></h3>
+					<button type="button" class="aiauthor-modal-close">&times;</button>
+				</div>
+				<div class="aiauthor-modal-body">
+					<div id="aiauthor-modal-prompt-section">
+						<label for="aiauthor-suggest-prompt"><?php esc_html_e( 'Custom Prompt (Optional)', 'ai-author-for-websites' ); ?></label>
+						<textarea id="aiauthor-suggest-prompt" rows="3" class="large-text" placeholder="<?php esc_attr_e( 'e.g., Make it more formal, focus on SEO, add humor...', 'ai-author-for-websites' ); ?>"></textarea>
+					</div>
+					<div id="aiauthor-modal-loading" class="aiauthor-modal-loading" style="display: none;">
+						<span class="spinner is-active"></span>
+						<p><?php esc_html_e( 'Generating suggestion...', 'ai-author-for-websites' ); ?></p>
+					</div>
+					<div id="aiauthor-modal-result" class="aiauthor-modal-result" style="display: none;">
+						<label><?php esc_html_e( 'Suggested Text:', 'ai-author-for-websites' ); ?></label>
+						<textarea id="aiauthor-modal-suggestion" rows="6" class="large-text"></textarea>
+					</div>
+					<div id="aiauthor-modal-error" class="aiauthor-modal-error" style="display: none;">
+						<p></p>
+					</div>
+				</div>
+				<div class="aiauthor-modal-footer">
+					<button type="button" class="button" id="aiauthor-modal-generate">
+						<span class="dashicons dashicons-admin-generic"></span>
+						<?php esc_html_e( 'Generate', 'ai-author-for-websites' ); ?>
+					</button>
+					<button type="button" class="button" id="aiauthor-modal-regenerate" style="display: none;">
+						<span class="dashicons dashicons-update"></span>
+						<?php esc_html_e( 'Regenerate', 'ai-author-for-websites' ); ?>
+					</button>
+					<button type="button" class="button button-primary" id="aiauthor-modal-apply" style="display: none;">
+						<span class="dashicons dashicons-yes"></span>
+						<?php esc_html_e( 'Use This', 'ai-author-for-websites' ); ?>
+					</button>
+					<button type="button" class="button" id="aiauthor-modal-cancel">
+						<?php esc_html_e( 'Cancel', 'ai-author-for-websites' ); ?>
+					</button>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
 	 * Save settings.
 	 */
 	private function save_settings() {
-		// Nonce already verified in render() before calling this method.
-		$settings = AI_Author_For_Websites::get_settings();
+		$settings = Plugin::get_settings();
 
-		// phpcs:disable WordPress.Security.NonceVerification.Missing -- Nonce verified in render().
+		// phpcs:disable WordPress.Security.NonceVerification.Missing
 		$active_tab = isset( $_POST['aiauthor_active_tab'] ) ? sanitize_key( $_POST['aiauthor_active_tab'] ) : 'general';
 
 		switch ( $active_tab ) {
@@ -396,7 +458,7 @@ class AIAUTHOR_Admin_Settings {
 		}
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
-		AI_Author_For_Websites::update_settings( $settings );
+		Plugin::update_settings( $settings );
 
 		add_settings_error( 'aiauthor_messages', 'aiauthor_message', __( 'Settings saved.', 'ai-author-for-websites' ), 'updated' );
 		settings_errors( 'aiauthor_messages' );
