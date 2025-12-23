@@ -522,16 +522,27 @@ class REST {
 		$title        = '';
 		$body_content = $content;
 
-		if ( preg_match( '/^TITLE:\s*(.+?)(?:\n|$)/i', $content, $matches ) ) {
+		// Try various title formats.
+		// Format: TITLE: My Title or **TITLE:** My Title or Title: My Title.
+		if ( preg_match( '/^(?:\*\*)?TITLE:?\*?\*?\s*(.+?)(?:\n|$)/im', $content, $matches ) ) {
 			$title        = trim( $matches[1] );
-			$body_content = trim( preg_replace( '/^TITLE:\s*.+?(?:\n|$)/i', '', $content ) );
+			$body_content = trim( preg_replace( '/^(?:\*\*)?TITLE:?\*?\*?\s*.+?(?:\n|$)/im', '', $content ) );
 		} elseif ( preg_match( '/<h1[^>]*>(.+?)<\/h1>/i', $content, $matches ) ) {
+			// Format: <h1>My Title</h1>.
 			$title        = strip_tags( $matches[1] );
 			$body_content = preg_replace( '/<h1[^>]*>.+?<\/h1>/i', '', $content, 1 );
 		} elseif ( preg_match( '/^#\s+(.+?)(?:\n|$)/m', $content, $matches ) ) {
+			// Format: # My Title.
 			$title        = trim( $matches[1] );
 			$body_content = trim( preg_replace( '/^#\s+.+?(?:\n|$)/m', '', $content, 1 ) );
 		}
+
+		// Clean up the title - remove any remaining TITLE: prefix variations.
+		$title = preg_replace( '/^(?:\*\*)?TITLE:?\*?\*?\s*/i', '', $title );
+		$title = trim( $title );
+
+		// Also clean up any TITLE: that might be in the body content.
+		$body_content = preg_replace( '/^(?:\*\*)?TITLE:?\*?\*?\s*.+?(?:\n)/im', '', $body_content );
 
 		$body_content = $this->markdown_to_html( $body_content );
 
